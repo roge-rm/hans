@@ -8,7 +8,6 @@ This is a continuation of a couple of previous projects of mine [1](https://gith
 
 Hans has the following features:
 - 5 momentary foot switches with status LEDs
-- 3 banks of buttons that can be switched between using the far left/right buttons (for a total of 15 assignable functions)
 - 1 external footswitch input (with no function.. at the moment)
 - USB-C charging with an 18650 on board for portable power (this is so that it can be used with only a MIDI cable)
 - [Teensy 2.0++](https://www.pjrc.com/store/teensypp.html) brains running at a blazing 16Mhz
