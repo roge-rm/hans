@@ -19,22 +19,22 @@ You can hook Hans up with a mini-USB (it shows up as a class-compliant MIDI devi
 Currently only MIDI note messages are able to be sent but soon additional modes will be added to allow for sending of MIDI CC (control change) or PC (program change) messages.
 
 Parts list:
-Name |	Quantity
-Micro Slide Switch 3PIN 2 Position 1P2T 5mm Handle |	1
-SPST Momentary Soft Touch Push Button Stomp Foot Pedal Switch |	5
-6.35mm Mono Female Jack With Switch Socket Panel Adapter |	1
-5 Pin Panel Mount Female Jack DIN Adapter MIDI Connector |	1
-7mm Momentary Push button Switch |	1
-TM1637 4 Bits Digital LED Display Module |	1
-Flat Top 5V 5mm Red LED Lamp w/integrated resistor | 5
-Type-C 5V 1A 18650 Lithium Battery Charger Module | 1
-Battery Spring and Plate Set |1
-Teensy 2.0++ USB AVR Development Board |1
-1000uF+ 6.3V+ Capacitor |	1
-220 Ohm Resistor 1/4W |	2
-M3 Thread Knurled Brass Threaded Heat Set |	10
-M3x10 Stainless Countersunk Hex Head Bolt	| 10
-M2x6mm Stainless Countersunk Self-Tapping Screw	| 6
-M2x10mm Stainless Hex Head Bolt	| 2
-M2 Stainless Nut |2
-
+| Name                                                          | Quantity |
+|---------------------------------------------------------------|----------|
+| Micro Slide Switch 3PIN 2 Position 1P2T 5mm Handle            | 1        |
+| SPST Momentary Soft Touch Push Button Stomp Foot Pedal Switch | 5        |
+| 6.35mm Mono Female Jack With Switch Socket Panel Adapter      | 1        |
+| 5 Pin Panel Mount Female Jack DIN Adapter MIDI Connector      | 1        |
+| 7mm Momentary Push button Switch                              | 1        |
+| TM1637 4 Bits Digital LED Display Module                      | 1        |
+| Flat Top 5V 5mm Red LED Lamp w/integrated resistor            | 5        |
+| Type-C 5V 1A 18650 Lithium Battery Charger Module             | 1        |
+| Battery Spring and Plate Set                                  | 1        |
+| Teensy 2.0++ USB AVR Development Board                        | 1        |
+| 1000uF+ 6.3V+ Capacitor                                       | 1        |
+| 220 Ohm Resistor 1/4W                                         | 2        |
+| M3 Thread Knurled Brass Threaded Heat Set                     | 10       |
+| M3x10 Stainless Countersunk Hex Head Bolt                     | 10       |
+| M2x6mm Stainless Countersunk Self-Tapping Screw               | 6        |
+| M2x10mm Stainless Hex Head Bolt                               | 2        |
+| M2 Stainless Nut                                              | 2        |
