@@ -1,5 +1,5 @@
 # hans
-hans is a 5 button battery powered USB/MIDI footswitch
+Hans is a 5 button battery powered USB/MIDI footswitch
 
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/front.jpg width=600><br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/back.jpg width=300><img src=https://raw.githubusercontent.com/hunked/hans/main/images/inside.jpg width=300>
