@@ -5,7 +5,7 @@ Hans is a 5 button battery powered USB/MIDI footswitch<br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/front.jpg width=600><br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/back.jpg width=300><img src=https://raw.githubusercontent.com/hunked/hans/main/images/inside.jpg width=300><br>
 
-This is a continuation of a couple of previous projects of mine [1](https://github.com/hunked/eightbuttonMIDIfootswitch)[2](https://github.com/hunked/footie). My goal is to make a durable, 3D printed, battery powered, MIDI footswitch that outputs over USB and 5 pin MIDI that can be assembled from cheap parts available to anyone. Why did I name it Hans? No good reason at all.
+This is a continuation of a couple of previous projects of mine [[1]](https://github.com/hunked/eightbuttonMIDIfootswitch)[[2]](https://github.com/hunked/footie). My goal is to make a durable, 3D printed, battery powered, MIDI footswitch that outputs over USB and 5 pin MIDI that can be assembled from cheap parts available to anyone. Why did I name it Hans? No good reason at all.
 
 Hans has the following hardware/features:
 - 5 momentary foot switches with status LEDs
