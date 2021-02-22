@@ -6,16 +6,20 @@ Hans is a 5 button battery powered USB/MIDI footswitch
 
 This is a continuation of a couple of previous projects of mine [1](https://github.com/hunked/eightbuttonMIDIfootswitch)[2](https://github.com/hunked/footie). My goal is to make a durable, 3D printed, battery powered, MIDI footswitch that outputs over USB and 5 pin MIDI that can be assembled from cheap parts available to anyone. Why did I name it Hans? No good reason at all.
 
-Hans has the following features:
+Hans has the following hardware/features:
 - 5 momentary foot switches with status LEDs
-- 1 external footswitch input (with no function.. at the moment)
-- USB-C charging with an 18650 on board for portable power (this is so that it can be used with only a MIDI cable)
+- 1 external footswitch input for acting as a "shift" button (with small backup shift button on the back in case an external switch is not attached)
+- 5 virtual "banks" of buttons that can be switched between while holding shift+the left most or right most button
+- USB-C charging with an 18650 on board for portable power
+- USB (mini) and 5-pin MIDI cable connections for MIDI data
 - [Teensy 2.0++](https://www.pjrc.com/store/teensypp.html) brains running at a blazing 16Mhz
 - a 4 character screen
 
-You can hook Hans up with a mini-USB (it shows up as a class-compliant MIDI device) or a standard MIDI cable and control whatever you damn well please. 
+Hans is capable of the following operations:
+- Send MIDI Note (on & off), Control Change, or Program Change messages
+- Switch between momentary or toggle operation
 
-Currently only MIDI note messages are able to be sent but soon additional modes will be added to allow for sending of MIDI CC (control change) or PC (program change) messages.
+You can hook Hans up with a mini-USB (it shows up as a class-compliant MIDI device) or a standard MIDI cable and control whatever you damn well please. 
 
 Parts list:
 | Name                                                          | Quantity |
@@ -24,7 +28,7 @@ Parts list:
 | SPST Momentary Soft Touch Push Button Stomp Foot Pedal Switch | 5        |
 | 6.35mm Mono Female Jack With Switch Socket Panel Adapter      | 1        |
 | 5 Pin Panel Mount Female Jack DIN Adapter MIDI Connector      | 1        |
-| 7mm Momentary Push button Switch                              | 1        |
+| 7mm Momentary Push button Switch                              | 2        |
 | TM1637 4 Bits Digital LED Display Module                      | 1        |
 | Flat Top 5V 5mm Red LED Lamp w/integrated resistor            | 5        |
 | Type-C 5V 1A 18650 Lithium Battery Charger Module             | 1        |
