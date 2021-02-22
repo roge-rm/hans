@@ -25,6 +25,9 @@ I will soon be adding a fourth mode that will allow editing of ALL values (notes
 
 I will also add some updated pictures with a final build, neat wiring, and build instructions to go with them. In the meantime I have a list of parts needed (on top of the 3D printed bits - which can be found on the thingiverse page).
 
+Pinout:<br>
+<img src=https://raw.githubusercontent.com/hunked/hans/main/images/pinout.png>
+
 Parts list:
 | Name                                                          | Quantity |
 |---------------------------------------------------------------|----------|
