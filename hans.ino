@@ -4,7 +4,7 @@
    code is WIP combination of last project (footie) and current project
 */
 
-#define buildRev "20210221"
+#define buildRev "20210222"
 const bool intro = true; // set to false to disable intro name/build date
 
 #include <Bounce2.h>
@@ -16,7 +16,7 @@ const bool intro = true; // set to false to disable intro name/build date
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 
 // for buttons and external switch (acts as an extra button)
-const byte switchPin[6] = {10, 11, 12, 13, 14, 17};
+const byte switchPin[7] = {38, 39, 40, 41, 42, 43, 44};
 
 // output pin attached to normally-connected pin of TS port
 // this is driven low (to simulate ground) for normally-closed external footswitches
@@ -35,7 +35,7 @@ bool toggle = false;
 bool normallyClosed = true;
 
 // for LEDs
-const byte ledPin[5] = {28, 29, 30, 31, 32};
+const byte ledPin[5] = {14, 15, 16, 26, 25};
 const int ledDelay = 125; //How long to light LEDs up for visual confirmation
 
 //Default channel for MIDI notes, CC, program change, control change
@@ -65,6 +65,7 @@ Bounce button2 = Bounce();
 Bounce button3 = Bounce();
 Bounce button4 = Bounce();
 Bounce button5 = Bounce();
+Bounce button6 = Bounce();
 Bounce buttonExt = Bounce();
 
 //Track runMode (function of footswitch) as well as pick default option if no change is made before timeout. Default timeout is 6000ms.
@@ -96,7 +97,8 @@ void setup() {
   button3.attach(switchPin[2], INPUT_PULLUP);
   button4.attach(switchPin[3], INPUT_PULLUP);
   button5.attach(switchPin[4], INPUT_PULLUP);
-  buttonExt.attach(switchPin[5], INPUT_PULLUP);
+  button6.attach(switchPin[5], INPUT_PULLUP);
+  buttonExt.attach(switchPin[6], INPUT_PULLUP);
 
   // button debounce interval in ms
   button1.interval(5);
@@ -104,6 +106,7 @@ void setup() {
   button3.interval(5);
   button4.interval(5);
   button5.interval(5);
+  button6.interval(5);
   buttonExt.interval(5);
 
   //eepromREAD(); //Set variable values from EEPROM (or defaults if EEPROM has not been written)
@@ -132,6 +135,7 @@ void setup() {
   pinMode(switchPin[3], INPUT_PULLUP);
   pinMode(switchPin[4], INPUT_PULLUP);
   pinMode(switchPin[5], INPUT_PULLUP);
+  pinMode(switchPin[6], INPUT_PULLUP);
 
   // initialize built-in LED as an output.
   pinMode(ledPin[0], OUTPUT);
@@ -154,8 +158,6 @@ void setup() {
 }
 
 void loop() {
-
-
   updateButtons(); //Poll for button presses.
 
   switch (runMode) {
@@ -182,49 +184,42 @@ void loop() {
   {
   }
 
-  //Break back to mode select by holding button 4
-  if (!button4.read()) {
-    if (button4.duration() >= 3000) {
-      panic();
-      resetSwitches();
-      displayText(6, 3);
-      resetLEDs();
-      updateButtons();
-      runMode = 0;
-      runmodeTime = runmodeTimeLong;
-      timeOut = 0;
+  if (buttonExt.changed() || button6.changed()) {
+    if (buttonExt.rose()) {
+      if (normallyClosed) {
+        shift = true;
+        display.showString("Shft");
+        screenWipe = 0;
+      }
+      else shift = false;
+    } else if (buttonExt.fell()) {
+      if (!normallyClosed) {
+        shift = true;
+        display.showString("Shft");
+        screenWipe = 0;
+      }
+      else shift = false;
     }
-  }
-}
 
-if (buttonExt.changed()) {
-  if (buttonExt.rose()) {
-    if (normallyClosed) {
+    else if (button6.rose()) {
+      shift = false;
+    }
+    else if (button6.fell()) {
       shift = true;
-      display.showString("SHFT");
+      display.showString("Shft");
       screenWipe = 0;
     }
-    else shift = false;
-  } else if (buttonExt.fell()) {
-    if (!normallyClosed) {
-      shift = true;
-      display.showString("SHFT");
+  }
+
+  // wipe the screen every wipeTime ms
+  if (wipe) {
+    if (screenWipe >= wipeTime) {
+      display.clear();
       screenWipe = 0;
     }
-    else shift = false;
   }
-}
 
-// wipe the screen every wipeTime ms
-if (wipe) {
-  if (screenWipe >= wipeTime) {
-    display.clear();
-    screenWipe = 0;
-  }
-}
-
-updateLEDs(); // update LED status
-
+  updateLEDs(); // update LED status
 }
 
 void updateButtons() {
@@ -233,6 +228,7 @@ void updateButtons() {
   button3.update();
   button4.update();
   button5.update();
+  button6.update();
   buttonExt.update();
 }
 
@@ -698,6 +694,9 @@ void shiftMode() {
     displayText(5, 0);
   }
   else if (button2.rose()) { // switch between toggle and momentary mode
+    resetNotes();
+    resetLEDs();
+    resetSwitches();
     toggle = !toggle;
     displayText(7, 1);
   }
