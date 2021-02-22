@@ -15,11 +15,14 @@ Hans has the following hardware/features:
 - [Teensy 2.0++](https://www.pjrc.com/store/teensypp.html) brains running at a blazing 16Mhz
 - a 4 character screen
 
-Hans is capable of the following operations:
-- Send MIDI Note (on & off), Control Change, or Program Change messages
-- Switch between momentary or toggle operation
+When Hans is turned on you can choose between three modes: 
+- send MIDI on/off messages (either momentary or toggle operation)
+- send MIDI control change (CC) messages
+- send MIDI program change (PC) messages
 
-You can hook Hans up with a mini-USB (it shows up as a class-compliant MIDI device) or a standard MIDI cable and control whatever you damn well please. 
+I will soon be adding a fourth mode that will allow editing of ALL values (notes, velocities, channels, default mode, timeout lengths, etc).
+
+I will also add some updated pictures with a final build, neat wiring, and build instructions to go with them. In the meantime I have a list of parts needed (on top of the 3D printed bits - which can be found on the thingiverse page).
 
 Parts list:
 | Name                                                          | Quantity |
