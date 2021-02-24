@@ -739,7 +739,7 @@ void resetLEDs() {
 void blinkLED(int i, int j) {
   digitalWrite(ledPin[i - 1], LOW);
   for (int k = 0; k < j - 1; k++) {
-    analogWrite(ledPin[i - 1], ledBright * 10);
+    analogWrite(ledPin[i - 1], ledBright * 25.5);
     delay(ledDelay);
     analogWrite(ledPin[i - 1], 0);
     delay(ledDelay / 3);
@@ -749,7 +749,7 @@ void blinkLED(int i, int j) {
 void updateLEDs() {
   for (int i = 0; i < 5; i++) {
     if ((ledStatus[switchBank][i] == 1) || (switchStates[switchBank][i] == 1)) {
-      analogWrite(ledPin[i], ledBright * 10);
+      analogWrite(ledPin[i], ledBright * 25.5);
     }
     else analogWrite(ledPin[i], 0);
   }
