@@ -35,6 +35,7 @@ bool toggle = false;
 bool normallyClosed = true;
 
 // for LEDs
+int ledBright = 5; //1-10 scale of how bright the LEDs are
 const byte ledPin[5] = {14, 15, 16, 26, 25};
 const int ledDelay = 125; //How long to light LEDs up for visual confirmation
 
@@ -738,9 +739,9 @@ void resetLEDs() {
 void blinkLED(int i, int j) {
   digitalWrite(ledPin[i - 1], LOW);
   for (int k = 0; k < j - 1; k++) {
-    digitalWrite(ledPin[i - 1], HIGH);
+    analogWrite(ledPin[i - 1], ledBright * 10);
     delay(ledDelay);
-    digitalWrite(ledPin[i - 1], LOW);
+    analogWrite(ledPin[i - 1], 0);
     delay(ledDelay / 3);
   }
 }
@@ -748,9 +749,9 @@ void blinkLED(int i, int j) {
 void updateLEDs() {
   for (int i = 0; i < 5; i++) {
     if ((ledStatus[switchBank][i] == 1) || (switchStates[switchBank][i] == 1)) {
-      digitalWrite(ledPin[i], HIGH);
+      analogWrite(ledPin[i], ledBright * 10);
     }
-    else digitalWrite(ledPin[i], LOW);
+    else analogWrite(ledPin[i], 0);
   }
 }
 
