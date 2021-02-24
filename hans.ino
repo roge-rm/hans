@@ -4,7 +4,7 @@
    code is WIP combination of last project (footie) and current project
 */
 
-#define buildRev "20210222"
+#define buildRev "20210224"
 const bool intro = true; // set to false to disable intro name/build date
 
 #include <Bounce2.h>
