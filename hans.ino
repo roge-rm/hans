@@ -34,8 +34,8 @@ bool toggle = false;
 // you also need to connect an output pin to the normally-connected pin of TS port (see above)
 bool normallyClosed = true;
 
-// for LEDs
-int ledBright = 5; //1-10 scale of how bright the LEDs are
+// LED settings
+int ledBright = 2; //1-10 scale of how bright the LEDs are
 const byte ledPin[5] = {14, 15, 16, 26, 25};
 const int ledDelay = 125; //How long to light LEDs up for visual confirmation
 
@@ -89,6 +89,8 @@ elapsedMillis screenWipe;
 // initialize display
 const int clkPin = 0;
 const int dioPin = 1;
+int screenBright = 1; // control how bright the screen is from 0-7
+int scrollDelay = 100; // speed at which text scrolls on the screen
 TM1637TinyDisplay display(clkPin, dioPin);
 
 void setup() {
@@ -113,8 +115,8 @@ void setup() {
   //eepromREAD(); //Set variable values from EEPROM (or defaults if EEPROM has not been written)
 
   // display setup and greeting
-  display.setBrightness(0x01);
-  display.setScrolldelay(100);
+  display.setBrightness(screenBright);
+  display.setScrolldelay(scrollDelay);
   if (intro) {
     display.showString("hans");
     delay(250);
@@ -159,7 +161,7 @@ void setup() {
 }
 
 void loop() {
-  updateButtons(); //Poll for button presses.
+  updateButtons(); // poll for button presses.
 
   switch (runMode) {
     case 0:
@@ -181,7 +183,7 @@ void loop() {
       break;
   }
 
-  while (usbMIDI.read()) //Ignore incoming MIDI
+  while (usbMIDI.read()) // ignore incoming MIDI
   {
   }
 
@@ -233,7 +235,7 @@ void updateButtons() {
   buttonExt.update();
 }
 
-void runModeSELECTMODE() { //Give choice between running modes, choose default mode after timeout if no option selected
+void runModeSELECTMODE() { // give choice between running modes, choose default mode after timeout if no option selected
   display.showString("Mode");
 
   ledStatus[switchBank][0] = 1;
@@ -247,19 +249,19 @@ void runModeSELECTMODE() { //Give choice between running modes, choose default m
     runMode = 1;
     displayText(runMode - 1, 3);
   }
-  if (button2.rose()) {
+  else if (button2.rose()) {
     resetLEDs();
     updateLEDs();
     runMode = 2;
     displayText(runMode - 1, 3);
   }
-  if (button3.rose()) {
+  else if (button3.rose()) {
     resetLEDs();
     updateLEDs();
     runMode = 3;
     displayText(runMode - 1, 3);
   }
-  if (button5.rose()) {
+  else if (button5.rose()) {
     resetLEDs();
     updateLEDs();
     runMode = 5;
@@ -677,11 +679,6 @@ void displayText(int textNum, int blinkNum) {
     case 7:
       if (toggle) display.showString("Toggle");
       if (!toggle) display.showString("Momentary");
-      blinkLED(1, blinkNum);
-      blinkLED(2, blinkNum);
-      blinkLED(3, blinkNum);
-      blinkLED(4, blinkNum);
-      blinkLED(5, blinkNum);
       break;
   }
   screenWipe = 0;
