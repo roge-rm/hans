@@ -4,8 +4,8 @@
    code is WIP combination of last project (footie) and current project
 */
 
-#define buildRev "20210226"
-bool intro = false; // set to false to disable intro name/build date
+#define buildRev "20210227"
+bool intro = true; // set to false to disable intro name/build date
 
 #include <Bounce2.h>
 #include <MIDI.h>
@@ -32,19 +32,19 @@ bool toggle = false;
 
 // set to true if your external pedal is closed in default state
 // you also need to connect an output pin to the normally-connected pin of TS port (see above)
-bool normallyClosed = true;
+bool normallyClosed; // set by EEPROM
 
 // LED settings
-int ledBright = 1; //1-10 scale of how bright the LEDs are
+int ledBright; // set by EEPROM - control LED brightness
 const byte ledPin[5] = {14, 15, 16, 26, 25};
 const int ledDelay = 125; //How long to light LEDs up for visual confirmation
 
 //Default channel for MIDI notes, CC, program change, control change
-int midiChan[3] = {16, 16, 16};
+int midiChan[3]; // set by EEPROM
 
 // can select from up to 5 switchBanks of notes/velocities/etc - defaults to 3
 int switchBank = 0;
-int numBanks = 3;
+int numBanks; // set by EEPROM
 
 // arrays are declared here but loaded from EEPROM/defaults in eepromREAD() -- eeprom not implemented yet
 int switchNotes[5][5] = {{60, 61, 62, 63, 64}, {65, 66, 67, 68, 69}, {70, 71, 72, 73, 74}, {75, 76, 77, 78, 79}, {80, 81, 82, 83, 84}};
@@ -76,10 +76,10 @@ Bounce buttonExt = Bounce();
 //3 = Program Change
 //5 = Settings - not implemented y et
 int runMode = 0;
-int runModeDefault = 1; //will set by EEPROM - not setup yet
-
-int runmodeTime = 5; // time in s to display runmode menu before selecting default
-const int runmodeTimeLong = 60; // time in s to display runmode when you return to it manually during operation
+int runModeDefault = 1; // set by EEPROM
+int runmodeTime;
+int runmodeDefaultTime; // set by EEPROM - time in s to display runmode menu before selecting default
+const int runmodeTimeLong = 30; // time in s to display runmode when you return to it manually during operation
 elapsedMillis timeOut;
 
 // for settings menu navigation
@@ -99,11 +99,13 @@ elapsedMillis screenWipe;
 // initialize display
 const int clkPin = 0;
 const int dioPin = 1;
-int screenBright = 1; // control how bright the screen is from 0-7
+int screenBright; // set by EEPROM - control how bright the screen is from 0-7
 int scrollDelay = 100; // speed at which text scrolls on the screen
 TM1637TinyDisplay display(clkPin, dioPin);
 
 void setup() {
+
+
   // button setup
   button1.attach(switchPin[0], INPUT_PULLUP);
   button2.attach(switchPin[1], INPUT_PULLUP);
@@ -122,7 +124,8 @@ void setup() {
   button6.interval(5);
   buttonExt.interval(5);
 
-  //eepromREAD(); //Set variable values from EEPROM (or defaults if EEPROM has not been written)
+  eepromLoad(); // load values from EEPROM - or from default set it nothing saved to EEPROMN
+  runmodeTime = runmodeDefaultTime; // set initial runmode timeout to default timeout
 
   // display setup and greeting
   display.setBrightness(screenBright);
@@ -672,14 +675,6 @@ void displayText(int textNum, int blinkNum) {
       display.showString("Edit");
       blinkLED(runMode, blinkNum);
       break;
-    case 5:
-      resetLEDs();
-      display.showString("Bank");
-      delay(150);
-      display.showNumber(switchBank + 1);
-      delay(150);
-      blinkLED(switchBank + 1, 2);
-      break;
     case 6:
       display.showString("Menu");
       blinkLED(3, blinkNum);
@@ -689,28 +684,42 @@ void displayText(int textNum, int blinkNum) {
       if (!toggle) display.showString("Momentary");
       break;
     case 8:
-      display.showString("Bank");
+      switch (switchBank) {
+        case 0:
+          display.showString("Bnk1");
+          break;
+        case 1:
+          display.showString("Bnk2");
+          break;
+        case 2:
+          display.showString("Bnk3");
+          break;
+        case 3:
+          display.showString("Bnk4");
+          break;
+        case 4:
+          display.showString("Bnk5");
+          break;
+      }
       break;
     case 9:
-      display.showString("Btn");
-      break;
-    case 10:
-      display.showString("Channel");
-      break;
-    case 11:
-      display.showString("Note");
-      delay(100);
-      displayText(8, 0);
-      break;
-    case 12:
-      display.showString("CC");
-      delay(100);
-      displayText(8, 0);
-      break;
-    case 13:
-      display.showString("PC");
-      delay(100);
-      displayText(8, 0);
+      switch (menuSelect) {
+        case 0:
+          display.showString("BTN1");
+          break;
+        case 1:
+          display.showString("BTN2");
+          break;
+        case 2:
+          display.showString("BTN3");
+          break;
+        case 3:
+          display.showString("BTN4");
+          break;
+        case 4:
+          display.showString("BTN5");
+          break;
+      }
       break;
     case 20:
       display.showString("Saved to EEPROM");
@@ -723,14 +732,13 @@ void displayText(int textNum, int blinkNum) {
       break;
   }
   screenWipe = 0;
-  delay(250);
 }
 
 void shiftMode() {
   if (button1.rose()) { // move down one bank of switches
     if (switchBank > 0) switchBank--;
     else if (switchBank == 0) switchBank = numBanks - 1;
-    displayText(5, 0);
+    displayText(8, 0);
   }
   else if (button2.rose()) { // switch between toggle and momentary mode
     resetNotes();
@@ -739,7 +747,7 @@ void shiftMode() {
     toggle = !toggle;
     displayText(7, 1);
   }
-  else if (button3.rose()) { // return to Menu
+  else if (button3.rose()) { // return to menu
     resetNotes();
     resetLEDs();
     resetSwitches();
@@ -759,7 +767,7 @@ void shiftMode() {
   else if (button5.rose()) { // move up one bank of switches
     if (switchBank < (numBanks - 1)) switchBank++;
     else if (switchBank == (numBanks - 1)) switchBank = 0;
-    displayText(5, 0);
+    displayText(8, 0);
   }
 
 }
@@ -779,6 +787,11 @@ void resetLEDs() {
       ledStatus[i][j] = 0;
     }
   }
+}
+
+void resetMenu() {
+  for (int i = 0; i < 4; i++) menuPos[i] = 0;
+  menuSelect = 0;
 }
 
 void blinkLED(int i, int j) {
@@ -824,11 +837,6 @@ void panic() {
    Menu beyond this point, work in progress
 */
 
-void resetMenu() {
-  for (int i = 0; i < 4; i++) menuPos[i] = 0;
-  menuSelect = 0;
-}
-
 void runModeSettings() {
   switch (menuPos[0]) {
     // main menu level - allow choices between channel, note, cc, pc, settings, data, and save/exit
@@ -853,7 +861,6 @@ void runModeSettings() {
       else if (button3.rose()) {
         menuPos[0] = menuSelect + 1;
         blinkLED(3, 3);
-        displayText(menuSelect + 10, 0);
         menuSelect = 0;
       }
       else if (button4.rose()) {
@@ -866,7 +873,17 @@ void runModeSettings() {
 
     // channel submenu - change note/cc/pc channel
     case 1:
-      backButton();
+      if (button1.rose()) { // button1 is back whenever possible
+        if (menuPos[1] > 0) {
+          menuSelect = menuPos[1] - 1;
+          menuPos[1] = 0;
+        }
+        else {
+          menuSelect = menuPos[0] - 1;
+          menuPos[0] = 0;
+        }
+        blinkLED(1, 3);
+      }
       switch (menuPos[1]) {
         case 0: // nothing selected
           display.showString(menuListChan[menuSelect]);
@@ -905,11 +922,11 @@ void runModeSettings() {
       backButton();
       switch (menuPos[1]) {
         case 0: // switch between banks
-          display.showNumber(switchBank + 1);
+          displayText(8, 0);
           changeValue(1);
           break;
         case 1: // pick which button
-          display.showNumber(menuSelect + 1);
+          displayText(9, 0);
           changeValue(2);
           break;
         case 2: // choose/change note or velocity
@@ -936,11 +953,11 @@ void runModeSettings() {
       backButton();
       switch (menuPos[1]) {
         case 0: // switch between banks
-          display.showNumber(switchBank + 1);
+          displayText(8, 0);
           changeValue(1);
           break;
         case 1: // pick which button
-          display.showNumber(menuSelect + 1);
+          displayText(9, 0);
           changeValue(2);
           break;
         case 2: // choose/change note or velocity
@@ -975,7 +992,7 @@ void runModeSettings() {
           changeValue(1);
           break;
         case 1: // pick which button
-          display.showNumber(menuSelect + 1);
+          displayText(9, 0);
           changeValue(2);
           break;
         case 2: // change pc number
@@ -1008,7 +1025,6 @@ void runModeSettings() {
           }
           else if (button3.rose()) {
             menuPos[1] = menuSelect + 1;
-            menuSelect = 0;
             blinkLED(3, 3);
           }
           else if (button4.rose()) {
@@ -1022,7 +1038,7 @@ void runModeSettings() {
           changeValue(11);
           break;
         case 2: // startup timeout
-          display.showNumber(runmodeTime);
+          display.showNumber(runmodeDefaultTime);
           changeValue(12);
           break;
         case 3: //  number of banks
@@ -1125,7 +1141,7 @@ void backButton() {
       menuPos[2] = 0;
     }
     else if (menuPos[1] > 0) {
-      menuSelect = menuPos[1] - 1;
+      menuSelect = menuPos[3];
       menuPos[1]--;
     }
     else {
@@ -1166,7 +1182,6 @@ void changeValue(int value) {
         menuPos[1] = 1;
         menuSelect = 0;
         blinkLED(3, 3);
-        displayText(9, 0);
       }
       else if (button4.rose()) {
         switchBank++;
@@ -1347,7 +1362,7 @@ void changeValue(int value) {
     // change default run mode timeout
     case 12:
       if (button2.rose()) {
-        runmodeTime--;
+        runmodeDefaultTime--;
         blinkLED(2, 3);
       }
       else if (button3.rose()) {
@@ -1355,7 +1370,7 @@ void changeValue(int value) {
         blinkLED(3, 3);
       }
       else if (button4.rose()) {
-        runmodeTime++;
+        runmodeDefaultTime++;
         blinkLED(4, 3);
       }
       break;
@@ -1371,7 +1386,7 @@ void changeValue(int value) {
         blinkLED(3, 3);
       }
       else if (button4.rose()) {
-        numBanks++;
+        numB                  anks++;
         blinkLED(4, 3);
       }
       break;
@@ -1474,8 +1489,8 @@ void checkValues() {
   // customizeable settings
   if (runModeDefault > 3) runModeDefault = 1;
   else if (runModeDefault < 1) runModeDefault = 3;
-  if (runmodeTime > 60) runmodeTime = 0;
-  else if (runmodeTime < 0) runmodeTime = 60;
+  if (runmodeDefaultTime > 60) runmodeDefaultTime = 0;
+  else if (runmodeDefaultTime < 0) runmodeDefaultTime = 60;
   if (numBanks > 5) numBanks = 2; // max 5 banks, minimum 2
   else if (numBanks < 2) numBanks = 5;
   if (ledBright > 10) ledBright = 1;
@@ -1489,13 +1504,182 @@ void checkValues() {
 */
 
 void eepromLoad() {
+  if (EEPROM.read(1000) == 1) { //Check the EEPROM update flag (address 1000) to see if custom values have been written. If so, load those values.
+    //Channels
+    midiChan[0] = EEPROM.read(0);
+    midiChan[1] = EEPROM.read(1);
+    midiChan[2] = EEPROM.read(2);
 
+    //Defaults
+    runModeDefault = EEPROM.read(5);
+    runmodeDefaultTime = EEPROM.read(6);
+    numBanks = EEPROM.read(7);
+    normallyClosed = EEPROM.read(8);
+    ledBright = EEPROM.read(9);
+    screenBright = EEPROM.read(10);
+    intro = EEPROM.read(11);
+
+    int h = 20; // start at address 20 for other data
+    //Notes
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchNotes[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    //Velocities
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchVels[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    //CC
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchCCs[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchCCValOns[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchCCValOffs[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    //PC
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchPCs[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+  }
+
+  else loadDefaults(); // load defaults if saved values are not present
 }
 
 void eepromSave() {
+  EEPROM.update(1000, 1); // set EEPROM write flag so that it is loaded next boot
 
+  EEPROM.update(0, midiChan[0]);
+  EEPROM.update(1, midiChan[1]);
+  EEPROM.update(2, midiChan[2]);
+
+  EEPROM.update(5, runModeDefault);
+  EEPROM.update(6, runmodeDefaultTime);
+  EEPROM.update(7, numBanks);
+  EEPROM.update(8, normallyClosed);
+  EEPROM.update(9, ledBright);
+  EEPROM.update(10, screenBright);
+  EEPROM.update(11, intro);
+
+  int h = 20; // start at address 20 for other data
+
+  //Notes
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchNotes[i][j]);
+      h++;
+    }
+  }
+  //Velocities
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchVels[i][j]);
+      h++;
+    }
+  }
+  //CC
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchCCs[i][j]);
+      h++;
+    }
+  }
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchCCValOns[i][j]);
+      h++;
+    }
+  }
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchCCValOffs[i][j]);
+      h++;
+    }
+  }
+  //PC
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchPCs[i][j]);
+      h++;
+    }
+  }
 }
 
-void eepromDefaults() {
+// load default values
+void loadDefaults() {
+  for (int i = 0; i < 3 ; i++) {
+    midiChan[i] = 16;
+  }
 
+  runModeDefault = 1;
+  runmodeDefaultTime = 5;
+  numBanks = 3;
+  normallyClosed = true;
+  ledBright = 1;
+  screenBright = 1;
+  intro = true;
+
+  //Set default notes starting at 60
+  int h = 60;
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchNotes[i][j] = h;
+      h++;
+    }
+  }
+
+  //Set all switches to default velocity of 64
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchVels[i][j] = 64;
+    }
+  }
+  // set default CC numbers starting at 20
+  h = 20;
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchCCs[i][j] = h;
+      h++;
+    }
+  }
+  // set all CC on values to default of 127
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchCCValOns[i][j] = 127;
+    }
+  }
+  // set all CC off values to default of 0
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchCCValOffs[i][j] = 0;
+    }
+  }
+
+  // set default PC numbers starting at 1
+  h = 1;
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchPCs[i][j] = h;
+      h++;
+    }
+  }
 }
