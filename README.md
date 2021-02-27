@@ -30,7 +30,7 @@ When Hans is turned on you can choose between four modes:
 - an edit mode to customize all features of the footswitch
 
 The first three modes are self-explanatory. Both the note on/off and CC modes can be toggled between momentary and toggle operations (done by holding shift + pressing button 2).
-The edit mode allows changing most of the settings on the device. You can change the midi notes sent (and the velocity sent with them), the control change numbers and values, and program change numbers. You can also edit the default mode (in case you want to start in CC or PC mode), the timeout before the default mode is selected, and various other settings light screen and LED brightness.
+The edit mode allows changing most of the settings on the device. You can change the midi notes sent (and the velocity sent with them), the control change numbers and values, and program change numbers. You can also edit the default mode (in case you want to start in CC or PC mode), the timeout before the default mode is selected, and various other settings like screen and LED brightness.
 
 ### How to use Hans:
 - Turn Hans on.
