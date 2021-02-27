@@ -4,8 +4,8 @@
    code is WIP combination of last project (footie) and current project
 */
 
-#define buildRev "20210224"
-const bool intro = true; // set to false to disable intro name/build date
+#define buildRev "20210226"
+bool intro = false; // set to false to disable intro name/build date
 
 #include <Bounce2.h>
 #include <MIDI.h>
@@ -35,7 +35,7 @@ bool toggle = false;
 bool normallyClosed = true;
 
 // LED settings
-int ledBright = 2; //1-10 scale of how bright the LEDs are
+int ledBright = 1; //1-10 scale of how bright the LEDs are
 const byte ledPin[5] = {14, 15, 16, 26, 25};
 const int ledDelay = 125; //How long to light LEDs up for visual confirmation
 
@@ -44,7 +44,7 @@ int midiChan[3] = {16, 16, 16};
 
 // can select from up to 5 switchBanks of notes/velocities/etc - defaults to 3
 int switchBank = 0;
-int numBanks = 5;
+int numBanks = 3;
 
 // arrays are declared here but loaded from EEPROM/defaults in eepromREAD() -- eeprom not implemented yet
 int switchNotes[5][5] = {{60, 61, 62, 63, 64}, {65, 66, 67, 68, 69}, {70, 71, 72, 73, 74}, {75, 76, 77, 78, 79}, {80, 81, 82, 83, 84}};
@@ -78,9 +78,19 @@ Bounce buttonExt = Bounce();
 int runMode = 0;
 int runModeDefault = 1; //will set by EEPROM - not setup yet
 
-unsigned int runmodeTime = 3000; // time in ms to display runmode menu before selecting default
-const int runmodeTimeLong = 30000; // time in ms to display runmode when you return to it manually during operation
+int runmodeTime = 5; // time in s to display runmode menu before selecting default
+const int runmodeTimeLong = 60; // time in s to display runmode when you return to it manually during operation
 elapsedMillis timeOut;
+
+// for settings menu navigation
+int menuPos[4] = {0, 0, 0, 0};
+int menuSelect = 0;
+char menuListMain[7][5] = {"CHAN", "NOTE", "CC", "PC", "SET", "DATA", "SAVE"};
+char menuListChan[3][5] = {"NOTE", "CC", "PC"};
+char menuListNote[2][5] = {"NOTE", "VEL"};
+char menuListCC[3][5] = {"CC", "V ON", "VOFF"};
+char menuListSettings[7][5] = {"DRUN", "TIME", "BANK", "EXSW", "LEDB", "SCRB", "BINF"};
+char menuListData[3][5] = {"LOAD", "SAVE", "DEF"};
 
 bool wipe = true; // enable/disable automatic screen wiping
 const int wipeTime = 1000; // max time in ms to display anything on the screen
@@ -165,10 +175,10 @@ void loop() {
 
   switch (runMode) {
     case 0:
-      runModeSELECTMODE();
+      runModeSelectMode();
       break;
     case 1:
-      runModeNOTE();
+      runModeNote();
       break;
     case 2:
       runModeCC();
@@ -177,9 +187,7 @@ void loop() {
       runModePC();
       break;
     case 5:
-      runModeSETTINGS();
-      runMode = 0;
-      screenWipe = 0;
+      runModeSettings();
       break;
   }
 
@@ -235,7 +243,7 @@ void updateButtons() {
   buttonExt.update();
 }
 
-void runModeSELECTMODE() { // give choice between running modes, choose default mode after timeout if no option selected
+void runModeSelectMode() { // give choice between running modes, choose default mode after timeout if no option selected
   display.showString("Mode");
 
   ledStatus[switchBank][0] = 1;
@@ -269,7 +277,7 @@ void runModeSELECTMODE() { // give choice between running modes, choose default 
   }
   screenWipe = 0;
 
-  if (timeOut >= runmodeTime) {
+  if (timeOut >= (runmodeTime * 1000)) {
     resetLEDs();
     updateLEDs();
     runMode = runModeDefault;
@@ -278,7 +286,7 @@ void runModeSELECTMODE() { // give choice between running modes, choose default 
   }
 }
 
-void runModeNOTE() {
+void runModeNote() {
   if (button1.changed() || button2.changed() || button3.changed() || button4.changed() || button5.changed()) {
     if (!shift) {
       if (!toggle) {
@@ -680,9 +688,42 @@ void displayText(int textNum, int blinkNum) {
       if (toggle) display.showString("Toggle");
       if (!toggle) display.showString("Momentary");
       break;
+    case 8:
+      display.showString("Bank");
+      break;
+    case 9:
+      display.showString("Btn");
+      break;
+    case 10:
+      display.showString("Channel");
+      break;
+    case 11:
+      display.showString("Note");
+      delay(100);
+      displayText(8, 0);
+      break;
+    case 12:
+      display.showString("CC");
+      delay(100);
+      displayText(8, 0);
+      break;
+    case 13:
+      display.showString("PC");
+      delay(100);
+      displayText(8, 0);
+      break;
+    case 20:
+      display.showString("Saved to EEPROM");
+      break;
+    case 21:
+      display.showString("Loaded from EEPROM");
+      break;
+    case 22:
+      display.showString("Loaded factory defaults");
+      break;
   }
   screenWipe = 0;
-  delay(100);
+  delay(250);
 }
 
 void shiftMode() {
@@ -707,6 +748,13 @@ void shiftMode() {
     runMode = 0;
     runmodeTime = runmodeTimeLong;
     timeOut = 0;
+  }
+  else if (button4.rose()) { // panic! stop all notes
+    resetSwitches();
+    resetLEDs();
+    panic();
+    blinkLED(4, 5);
+    display.showString("All notes stopped");
   }
   else if (button5.rose()) { // move up one bank of switches
     if (switchBank < (numBanks - 1)) switchBank++;
@@ -771,6 +819,683 @@ void panic() {
     }
 }
 
-void runModeSETTINGS() {
+
+/*
+   Menu beyond this point, work in progress
+*/
+
+void resetMenu() {
+  for (int i = 0; i < 4; i++) menuPos[i] = 0;
+  menuSelect = 0;
+}
+
+void runModeSettings() {
+  switch (menuPos[0]) {
+    // main menu level - allow choices between channel, note, cc, pc, settings, data, and save/exit
+    // must choose save/exit (or save under data) or else changes will be lost on reboot
+    case 0:
+      display.showString(menuListMain[menuSelect]);
+      if (button1.rose()) { // button1 is back whenever possible - in this case it exist the menu without saving
+        resetNotes();
+        resetLEDs();
+        resetSwitches();
+        resetMenu();
+        runmodeTime = runmodeTimeLong;
+        runMode = 0;
+        timeOut = 0;
+        blinkLED(1, 3);
+      }
+      else if (button2.rose()) {
+        if (menuSelect > 0) menuSelect--;
+        else menuSelect = 6;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[0] = menuSelect + 1;
+        blinkLED(3, 3);
+        displayText(menuSelect + 10, 0);
+        menuSelect = 0;
+      }
+      else if (button4.rose()) {
+        if (menuSelect < 6) menuSelect++;
+        else menuSelect = 0;
+        blinkLED(4, 3);
+      }
+      screenWipe = 0;
+      break;
+
+    // channel submenu - change note/cc/pc channel
+    case 1:
+      backButton();
+      switch (menuPos[1]) {
+        case 0: // nothing selected
+          display.showString(menuListChan[menuSelect]);
+          if (button2.rose()) {
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 2;
+            blinkLED(2, 3);
+          }
+          else if (button3.rose()) {
+            menuPos[1] = menuSelect + 1;
+            blinkLED(3, 3);
+          }
+          else if (button4.rose()) {
+            if (menuSelect < 2) menuSelect++;
+            else menuSelect = 0;
+            blinkLED(4, 3);
+          }
+          break;
+        case 1: // change note channel
+          display.showNumber(midiChan[0]);
+          changeValue(0);
+          break;
+        case 2: // change CC channel
+          display.showNumber(midiChan[1]);
+          changeValue(0);
+          break;
+        case 3: // change PC channel
+          display.showNumber(midiChan[2]);
+          changeValue(0);
+          break;
+      }
+      break;
+
+    // note submenu - change note values and velocities
+    case 2:
+      backButton();
+      switch (menuPos[1]) {
+        case 0: // switch between banks
+          display.showNumber(switchBank + 1);
+          changeValue(1);
+          break;
+        case 1: // pick which button
+          display.showNumber(menuSelect + 1);
+          changeValue(2);
+          break;
+        case 2: // choose/change note or velocity
+          switch (menuPos[2]) {
+            case 0: // choose note or velocity
+              display.showString(menuListNote[menuSelect]);
+              changeValue(3);
+              break;
+            case 1: // change note
+              display.showNumber(switchNotes[switchBank][menuPos[3]]);
+              changeValue(4);
+              break;
+            case 2: // change velocity
+              display.showNumber(switchVels[switchBank][menuPos[3]]);
+              changeValue(5);
+              break;
+          }
+          break;
+      }
+      break;
+
+    // cc submenu - change cc numbers and on/off values
+    case 3:
+      backButton();
+      switch (menuPos[1]) {
+        case 0: // switch between banks
+          display.showNumber(switchBank + 1);
+          changeValue(1);
+          break;
+        case 1: // pick which button
+          display.showNumber(menuSelect + 1);
+          changeValue(2);
+          break;
+        case 2: // choose/change note or velocity
+          switch (menuPos[2]) {
+            case 0: // choose note or velocity
+              display.showString(menuListCC[menuSelect]);
+              changeValue(6);
+              break;
+            case 1: // change CC
+              display.showNumber(switchCCs[switchBank][menuPos[3]]);
+              changeValue(7);
+              break;
+            case 2: // change on value
+              display.showNumber(switchCCValOns[switchBank][menuPos[3]]);
+              changeValue(8);
+              break;
+            case 3: // change off value
+              display.showNumber(switchCCValOffs[switchBank][menuPos[3]]);
+              changeValue(9);
+              break;
+          }
+          break;
+      }
+      break;
+
+    // pc submenu - chance pc numbers
+    case 4:
+      backButton();
+      switch (menuPos[1]) {
+        case 0: // switch between banks
+          display.showNumber(switchBank + 1);
+          changeValue(1);
+          break;
+        case 1: // pick which button
+          display.showNumber(menuSelect + 1);
+          changeValue(2);
+          break;
+        case 2: // change pc number
+          display.showNumber(switchPCs[switchBank][menuPos[3]]);
+          changeValue(10);
+          break;
+      }
+      break;
+
+    // settings submenu - change system systems
+    case 5:
+      if (button1.rose()) { // button1 is back whenever possible
+        if (menuPos[1] > 0) {
+          menuSelect = menuPos[1] - 1;
+          menuPos[1] = 0;
+        }
+        else {
+          menuSelect = menuPos[0] - 1;
+          menuPos[0] = 0;
+        }
+        blinkLED(1, 3);
+      }
+      switch (menuPos[1]) {
+        case 0: // nothing selected
+          display.showString(menuListSettings[menuSelect]);
+          if (button2.rose()) {
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 6;
+            blinkLED(2, 3);
+          }
+          else if (button3.rose()) {
+            menuPos[1] = menuSelect + 1;
+            menuSelect = 0;
+            blinkLED(3, 3);
+          }
+          else if (button4.rose()) {
+            if (menuSelect < 6) menuSelect++;
+            else menuSelect = 0;
+            blinkLED(4, 3);
+          }
+          break;
+        case 1: // default run mode
+          display.showNumber(runModeDefault);
+          changeValue(11);
+          break;
+        case 2: // startup timeout
+          display.showNumber(runmodeTime);
+          changeValue(12);
+          break;
+        case 3: //  number of banks
+          display.showNumber(numBanks);
+          changeValue(13);
+          break;
+        case 4: // ext footswitch default state
+          if (normallyClosed) display.showString("NC");
+          else if (!normallyClosed) display.showString("NO");
+          changeValue(14);
+          break;
+        case 5: // led intensity
+          display.showNumber(ledBright);
+          changeValue(15);
+          break;
+        case 6: // screen brightness
+          display.showNumber(screenBright);
+          changeValue(16);
+          break;
+        case 7: // intro text on/off
+          if (intro) display.showString("YES");
+          else if (!intro) display.showString("NO");
+          changeValue(17);
+          break;
+      }
+      break;
+
+    // data submenu - EEPROM management
+    case 6:
+      if (button1.rose()) { // button1 is back whenever possible
+        if (menuPos[1] > 0) {
+          menuSelect = menuPos[1] - 1;
+          menuPos[1] = 0;
+        }
+        else {
+          menuSelect = menuPos[0] - 1;
+          menuPos[0] = 0;
+        }
+        blinkLED(1, 3);
+      }
+      switch (menuPos[1]) {
+        case 0: // nothing selected
+          display.showString(menuListData[menuSelect]);
+          if (button2.rose()) {
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 2;
+            blinkLED(2, 3);
+          }
+          else if (button3.rose()) {
+            menuPos[1] = menuSelect + 1;
+            blinkLED(3, 3);
+          }
+          else if (button4.rose()) {
+            if (menuSelect < 2) menuSelect++;
+            else menuSelect = 0;
+            blinkLED(4, 3);
+          }
+          break;
+        case 1: // load from EEPROM
+          displayText(21, 0);
+          blinkLED(3, 3);
+          menuPos[1] = 0;
+          break;
+        case 2: // save to EEPROM
+          displayText(20, 0);
+          blinkLED(3, 3);
+          menuPos[1] = 0;
+          break;
+        case 3: // restore defaults (does not save to EEPROM automatically)
+          displayText(22, 0);
+          blinkLED(3, 3);
+          menuPos[1] = 0;
+          break;
+      }
+      break;
+
+    // save to EEPROM and exit
+    case 7:
+      resetNotes();
+      resetLEDs();
+      resetSwitches();
+      resetMenu();
+      eepromSave();
+      displayText(20, 0);
+      runmodeTime = runmodeTimeLong;
+      runMode = 0;
+      timeOut = 0;
+      blinkLED(1, 5);
+      break;
+
+  }
+  screenWipe = 0;
+  checkValues(); // verify changes are valid and correct if not
+}
+
+void backButton() {
+  if (button1.rose()) { // button1 is back whenever possible
+    if (menuPos[2] > 0) {
+      menuSelect = menuPos[2] - 1;
+      menuPos[2] = 0;
+    }
+    else if (menuPos[1] > 0) {
+      menuSelect = menuPos[1] - 1;
+      menuPos[1]--;
+    }
+    else {
+      menuSelect = menuPos[0] - 1;
+      menuPos[0] = 0;
+    }
+    blinkLED(1, 3);
+  }
+}
+
+// handles functions from settings menu that change values
+void changeValue(int value) {
+  switch (value) {
+    // change midi channels
+    case 0:
+      if (button2.rose()) {
+        midiChan[menuPos[1] - 1]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        if (menuPos[1] > 0) menuPos[1] = 0;
+        else resetMenu();
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        midiChan[menuPos[1] - 1]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change bank
+    case 1:
+      if (button2.rose()) {
+        switchBank--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 1;
+        menuSelect = 0;
+        blinkLED(3, 3);
+        displayText(9, 0);
+      }
+      else if (button4.rose()) {
+        switchBank++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // choose button
+    case 2:
+      if (button2.rose()) {
+        if (menuSelect > 0) menuSelect--;
+        else menuSelect = 4;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 2; // position 2 is for editing note/velocity
+        menuPos[3] = menuSelect; //menuPos[3] holds the selected button for editing
+        blinkLED(3, 3);
+        menuSelect = 0;
+      }
+      else if (button4.rose()) {
+        if (menuSelect < 4) menuSelect++;
+        else menuSelect = 0;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // choose note or velocity edit
+    case 3:
+      if (button2.rose()) {
+        if (menuSelect > 0) menuSelect--;
+        else menuSelect = 1;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = menuSelect + 1;
+        blinkLED(3, 3);
+        menuSelect = 0;
+      }
+      else if (button4.rose()) {
+        if (menuSelect < 1) menuSelect++;
+        else menuSelect = 0;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change note
+    case 4:
+      if (button2.rose()) {
+        switchNotes[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchNotes[switchBank][menuPos[3]]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change velocity
+    case 5:
+      if (button2.rose()) {
+        switchVels[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchVels[switchBank][menuPos[3]]--;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // choose cc number, on value, off value
+    case 6:
+      if (button2.rose()) {
+        if (menuSelect > 0) menuSelect--;
+        else menuSelect = 2;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = menuSelect + 1;
+        blinkLED(3, 3);
+        menuSelect = 0;
+      }
+      else if (button4.rose()) {
+        if (menuSelect < 2) menuSelect++;
+        else menuSelect = 0;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change cc number
+    case 7:
+      if (button2.rose()) {
+        switchCCs[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchCCs[switchBank][menuPos[3]]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change cc on value
+    case 8:
+      if (button2.rose()) {
+        switchCCValOns[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchCCValOns[switchBank][menuPos[3]]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change cc off value
+    case 9:
+      if (button2.rose()) {
+        switchCCValOffs[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[2] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchCCValOffs[switchBank][menuPos[3]]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change pc number
+    case 10:
+      if (button2.rose()) {
+        switchPCs[switchBank][menuPos[3]]--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1]--;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        switchPCs[switchBank][menuPos[3]]++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change default run mdoe
+    case 11:
+      if (button2.rose()) {
+        runModeDefault--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        runModeDefault++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change default run mode timeout
+    case 12:
+      if (button2.rose()) {
+        runmodeTime--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        runmodeTime++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change number of banks
+    case 13:
+      if (button2.rose()) {
+        numBanks--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        numBanks++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change between normally closed/normally open external switch
+    case 14:
+      if (button2.rose()) {
+        normallyClosed = !normallyClosed;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        normallyClosed = !normallyClosed;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change LED brightness
+    case 15:
+      if (button2.rose()) {
+        ledBright--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        ledBright++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // change screen brightness
+    case 16:
+      if (button2.rose()) {
+        screenBright--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        screenBright++;
+        blinkLED(4, 3);
+      }
+      break;
+
+    // disable intro text with build date
+    case 17:
+      if (button2.rose()) {
+        intro = !intro;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        intro = !intro;
+        blinkLED(4, 3);
+      }
+      break;
+  }
+}
+
+void checkValues() {
+  // MIDI channels
+  for (int i = 0; i < 3; i++) {
+    if (midiChan[i] > 16) midiChan[i] = 1;
+    else if (midiChan[i] < 1) midiChan[i] = 16;
+  }
+
+  // bank of switches
+  if (switchBank > (numBanks - 1)) switchBank = 0;
+  else if (switchBank < 0) switchBank = numBanks - 1;
+
+  // notes, CC, PC
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      if (switchNotes[i][j] > 127) switchNotes[i][j] = 0;
+      else if (switchNotes[i][j] < 0) switchNotes[i][j] = 127;
+      if (switchVels[i][j] > 127) switchVels[i][j] = 0;
+      else if (switchVels[i][j] < 0) switchVels[i][j] = 127;
+      if (switchCCs[i][j] > 127) switchCCs[i][j] = 0;
+      else if (switchCCs[i][j] < 0) switchCCs[i][j] = 127;
+      if (switchCCValOns[i][j] > 127) switchCCValOns[i][j] = 0;
+      else if (switchCCValOns[i][j] < 0) switchCCValOns[i][j] = 127;
+      if (switchCCValOffs[i][j] > 127) switchCCValOffs[i][j] = 0;
+      else if (switchCCValOffs[i][j] < 0) switchCCValOffs[i][j] = 127;
+      if (switchPCs[i][j] > 127) switchPCs[i][j] = 0;
+      else if (switchPCs[i][j] < 0) switchPCs[i][j] = 127;
+    }
+  }
+
+  // customizeable settings
+  if (runModeDefault > 3) runModeDefault = 1;
+  else if (runModeDefault < 1) runModeDefault = 3;
+  if (runmodeTime > 60) runmodeTime = 0;
+  else if (runmodeTime < 0) runmodeTime = 60;
+  if (numBanks > 5) numBanks = 2; // max 5 banks, minimum 2
+  else if (numBanks < 2) numBanks = 5;
+  if (ledBright > 10) ledBright = 1;
+  else if (ledBright < 1) ledBright = 10;
+  if (screenBright > 7) screenBright = 1;
+  else if (screenBright < 1) screenBright = 7;
+}
+
+/*
+   EEPROM management functions
+*/
+
+void eepromLoad() {
+
+}
+
+void eepromSave() {
+
+}
+
+void eepromDefaults() {
 
 }
