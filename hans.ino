@@ -1,11 +1,9 @@
 /*
    5 buttons and an external switch walk in to a bar.
-
-   code is WIP combination of last project (footie) and current project
 */
 
-#define buildRev "20210227"
-bool intro = true; // set to false to disable intro name/build date
+#define buildRev "202100302"
+bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
 #include <MIDI.h>
@@ -89,12 +87,14 @@ char menuListMain[7][5] = {"CHAN", "NOTE", "CC", "PC", "SET", "DATA", "SAVE"};
 char menuListChan[3][5] = {"NOTE", "CC", "PC"};
 char menuListNote[2][5] = {"NOTE", "VEL"};
 char menuListCC[3][5] = {"CC", "V ON", "VOFF"};
-char menuListSettings[7][5] = {"DRUN", "TIME", "BANK", "EXSW", "LEDB", "SCRB", "BINF"};
+char menuListSettings[8][5] = {"DRUN", "TIME", "BANK", "EXSW", "LEDB", "SCRB", "INFO", "IDLE"};
 char menuListData[3][5] = {"LOAD", "SAVE", "DEF"};
+char idleText[4][5] = {".", " .", "  .", "   ."};
 
-bool wipe = true; // enable/disable automatic screen wiping
 const int wipeTime = 1000; // max time in ms to display anything on the screen
+int idleTimeOut; // set by EEPROM - time in seconds to wait before showing a keepalive notification
 elapsedMillis screenWipe;
+elapsedMillis idleTime;
 
 // initialize display
 const int clkPin = 0;
@@ -103,9 +103,8 @@ int screenBright; // set by EEPROM - control how bright the screen is from 0-7
 int scrollDelay = 100; // speed at which text scrolls on the screen
 TM1637TinyDisplay display(clkPin, dioPin);
 
+
 void setup() {
-
-
   // button setup
   button1.attach(switchPin[0], INPUT_PULLUP);
   button2.attach(switchPin[1], INPUT_PULLUP);
@@ -179,6 +178,7 @@ void loop() {
   switch (runMode) {
     case 0:
       runModeSelectMode();
+      idleTime = 0;
       break;
     case 1:
       runModeNote();
@@ -191,6 +191,7 @@ void loop() {
       break;
     case 5:
       runModeSettings();
+      idleTime = 0;
       break;
   }
 
@@ -226,9 +227,18 @@ void loop() {
   }
 
   // wipe the screen every wipeTime ms
-  if (wipe) {
-    if (screenWipe >= wipeTime) {
-      display.clear();
+  if (screenWipe >= wipeTime) {
+    display.clear();
+    screenWipe = 0;
+  }
+
+
+  // show a lil somethin on the screen every idleTimeOut
+  // this is because I always forget to turn Hans off
+  if (idleTimeOut > 0) {
+    if (idleTime >= (idleTimeOut * 1000)) {
+      display.showString(idleText[random(0, 3)]);
+      idleTime = 0;
       screenWipe = 0;
     }
   }
@@ -244,6 +254,15 @@ void updateButtons() {
   button5.update();
   button6.update();
   buttonExt.update();
+
+  if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+  else if (button1.changed()) idleTime = 0;
+
 }
 
 void runModeSelectMode() { // give choice between running modes, choose default mode after timeout if no option selected
@@ -681,7 +700,7 @@ void displayText(int textNum, int blinkNum) {
       break;
     case 7:
       if (toggle) display.showString("Toggle");
-      if (!toggle) display.showString("Momentary");
+      if (!toggle) display.showString("Moment");
       break;
     case 8:
       switch (switchBank) {
@@ -1020,7 +1039,7 @@ void runModeSettings() {
           display.showString(menuListSettings[menuSelect]);
           if (button2.rose()) {
             if (menuSelect > 0) menuSelect--;
-            else menuSelect = 6;
+            else menuSelect = 7;
             blinkLED(2, 3);
           }
           else if (button3.rose()) {
@@ -1028,7 +1047,7 @@ void runModeSettings() {
             blinkLED(3, 3);
           }
           else if (button4.rose()) {
-            if (menuSelect < 6) menuSelect++;
+            if (menuSelect < 7) menuSelect++;
             else menuSelect = 0;
             blinkLED(4, 3);
           }
@@ -1063,6 +1082,12 @@ void runModeSettings() {
           else if (!intro) display.showString("NO");
           changeValue(17);
           break;
+        case 8: // idle timeout - set to less than 15 to disable
+          display.showNumber(idleTimeOut);
+          changeValue(18);
+          break;
+
+
       }
       break;
 
@@ -1386,7 +1411,7 @@ void changeValue(int value) {
         blinkLED(3, 3);
       }
       else if (button4.rose()) {
-        numB                  anks++;
+        numBanks++;
         blinkLED(4, 3);
       }
       break;
@@ -1454,6 +1479,21 @@ void changeValue(int value) {
         blinkLED(4, 3);
       }
       break;
+
+    case 18:
+      if (button2.rose()) {
+        idleTimeOut--;
+        blinkLED(2, 3);
+      }
+      else if (button3.rose()) {
+        menuPos[1] = 0;
+        blinkLED(3, 3);
+      }
+      else if (button4.rose()) {
+        idleTimeOut++;
+        blinkLED(4, 3);
+      }
+      break;
   }
 }
 
@@ -1497,6 +1537,11 @@ void checkValues() {
   else if (ledBright < 1) ledBright = 10;
   if (screenBright > 7) screenBright = 1;
   else if (screenBright < 1) screenBright = 7;
+
+  if (idleTimeOut == 14) idleTimeOut = 0;
+  else if (idleTimeOut == 1) idleTimeOut = 15;
+  else if (idleTimeOut < 0) idleTimeOut = 60;
+  else if (idleTimeOut > 60) idleTimeOut = 0;
 }
 
 /*
@@ -1518,6 +1563,7 @@ void eepromLoad() {
     ledBright = EEPROM.read(9);
     screenBright = EEPROM.read(10);
     intro = EEPROM.read(11);
+    idleTimeOut = EEPROM.read(12);
 
     int h = 20; // start at address 20 for other data
     //Notes
@@ -1579,6 +1625,7 @@ void eepromSave() {
   EEPROM.update(9, ledBright);
   EEPROM.update(10, screenBright);
   EEPROM.update(11, intro);
+  EEPROM.update(12, idleTimeOut);
 
   int h = 20; // start at address 20 for other data
 
@@ -1637,6 +1684,7 @@ void loadDefaults() {
   ledBright = 1;
   screenBright = 1;
   intro = true;
+  idleTimeOut = 15;
 
   //Set default notes starting at 60
   int h = 60;
