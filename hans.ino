@@ -257,11 +257,12 @@ void updateButtons() {
 
   if (button1.changed()) idleTime = 0;
   else if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
+  else if (button2.changed()) idleTime = 0;
+  else if (button3.changed()) idleTime = 0;
+  else if (button4.changed()) idleTime = 0;
+  else if (button5.changed()) idleTime = 0;
+  else if (button6.changed()) idleTime = 0;
+  else if (buttonExt.changed()) idleTime = 0;
 
 }
 
