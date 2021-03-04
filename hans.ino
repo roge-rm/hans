@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "202100302"
+#define buildRev "202100304"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
@@ -57,8 +57,11 @@ bool ledStatus[5][5] = {{0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0
 // switch states for runModes that require toggling
 bool switchStates[5][5] = {{0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}};
 
-// create Bounce objects for each button and switch.
+bool buttonStates[6] = {0, 0, 0, 0, 0, 0}; // track whether each button is held or not
+unsigned long buttonPressTime[6]; // track how long button is pressed for
+const int buttonRepeatDelay = 250; // how long a button must be pressed for to count as a repeat (when editing)
 
+// create Bounce objects for each button and switch.
 Bounce button1 = Bounce();
 Bounce button2 = Bounce();
 Bounce button3 = Bounce();
@@ -67,12 +70,12 @@ Bounce button5 = Bounce();
 Bounce button6 = Bounce();
 Bounce buttonExt = Bounce();
 
-//Track runMode (function of footswitch) as well as pick default option if no change is made before timeout. Default timeout is 6000ms.
-//0 = Startup screen (runMode select)
-//1 = MIDI Note (default on/off as button pressed/released)
-//2 = MIDI CC (default on/off as button pressed/released)
-//3 = Program Change
-//5 = Settings - not implemented y et
+// Track runMode (function of footswitch) as well as pick default option if no change is made before timeout. Default timeout is 6000ms.
+// 0 = Startup screen (runMode select)
+// 1 = MIDI Note
+// 2 = MIDI CC
+// 3 = Program Change
+// 5 = Edit mode
 int runMode = 0;
 int runModeDefault = 1; // set by EEPROM
 int runmodeTime;
@@ -137,9 +140,6 @@ void setup() {
   }
   display.clear();
 
-  // serial debugging
-  //Serial.begin(9600);
-
   // initialize MIDI
   MIDI.begin();
 
@@ -166,7 +166,7 @@ void setup() {
   if (normallyClosed) digitalWrite(extDriver, LOW);
   else if (!normallyClosed) digitalWrite(extDriver, HIGH);
 
-  updateButtons(); //Pull initial button status to prevent phantom MIDI messages from being sent once the loop starts
+  updateButtons(); // pull initial button status to prevent phantom MIDI messages from being sent once the loop starts
 
   display.clear();
   timeOut = 0;
@@ -247,23 +247,33 @@ void loop() {
 }
 
 void updateButtons() {
-  button1.update();
-  button2.update();
-  button3.update();
-  button4.update();
-  button5.update();
-  button6.update();
-  buttonExt.update();
-
-  if (button1.changed()) idleTime = 0;
-  else if (button1.changed()) idleTime = 0;
-  else if (button2.changed()) idleTime = 0;
-  else if (button3.changed()) idleTime = 0;
-  else if (button4.changed()) idleTime = 0;
-  else if (button5.changed()) idleTime = 0;
-  else if (button6.changed()) idleTime = 0;
-  else if (buttonExt.changed()) idleTime = 0;
-
+  if (button1.update()) {
+    buttonStates[0] = !button1.read();
+    idleTime = 0;
+  }
+  if (button2.update()) {
+    buttonStates[1] = !button2.read();
+    idleTime = 0;
+  }
+  if (button3.update()) {
+    buttonStates[2] = !button3.read();
+    idleTime = 0;
+  }
+  if (button4.update()) {
+    buttonStates[3] = !button4.read();
+    idleTime = 0;
+  }
+  if (button5.update()) {
+    buttonStates[4] = !button5.read();
+    idleTime = 0;
+  }
+  if (button6.update()) {
+    buttonStates[5] = !button6.read();
+    idleTime = 0;
+  }
+  if (buttonExt.update()) {
+    idleTime = 0;
+  }
 }
 
 void runModeSelectMode() { // give choice between running modes, choose default mode after timeout if no option selected
@@ -816,7 +826,7 @@ void resetMenu() {
 
 void blinkLED(int i, int j) {
   digitalWrite(ledPin[i - 1], LOW);
-  for (int k = 0; k < j - 1; k++) {
+  for (int k = 1; k < j; k++) {
     analogWrite(ledPin[i - 1], ledBright * 25.5);
     delay(ledDelay);
     analogWrite(ledPin[i - 1], 0);
@@ -871,22 +881,22 @@ void runModeSettings() {
         runmodeTime = runmodeTimeLong;
         runMode = 0;
         timeOut = 0;
-        blinkLED(1, 3);
+        blinkLED(1, 2);
       }
       else if (button2.rose()) {
         if (menuSelect > 0) menuSelect--;
         else menuSelect = 6;
-        blinkLED(2, 3);
+        blinkLED(2, 2);
       }
       else if (button3.rose()) {
         menuPos[0] = menuSelect + 1;
-        blinkLED(3, 3);
+        blinkLED(3, 2);
         menuSelect = 0;
       }
       else if (button4.rose()) {
         if (menuSelect < 6) menuSelect++;
         else menuSelect = 0;
-        blinkLED(4, 3);
+        blinkLED(4, 2);
       }
       screenWipe = 0;
       break;
@@ -902,7 +912,7 @@ void runModeSettings() {
           menuSelect = menuPos[0] - 1;
           menuPos[0] = 0;
         }
-        blinkLED(1, 3);
+        blinkLED(1, 2);
       }
       switch (menuPos[1]) {
         case 0: // nothing selected
@@ -910,16 +920,16 @@ void runModeSettings() {
           if (button2.rose()) {
             if (menuSelect > 0) menuSelect--;
             else menuSelect = 2;
-            blinkLED(2, 3);
+            blinkLED(2, 2);
           }
           else if (button3.rose()) {
             menuPos[1] = menuSelect + 1;
-            blinkLED(3, 3);
+            blinkLED(3, 2);
           }
           else if (button4.rose()) {
             if (menuSelect < 2) menuSelect++;
             else menuSelect = 0;
-            blinkLED(4, 3);
+            blinkLED(4, 2);
           }
           break;
         case 1: // change note channel
@@ -1008,7 +1018,7 @@ void runModeSettings() {
       backButton();
       switch (menuPos[1]) {
         case 0: // switch between banks
-          display.showNumber(switchBank + 1);
+          displayText(8, 0);
           changeValue(1);
           break;
         case 1: // pick which button
@@ -1033,7 +1043,7 @@ void runModeSettings() {
           menuSelect = menuPos[0] - 1;
           menuPos[0] = 0;
         }
-        blinkLED(1, 3);
+        blinkLED(1, 2);
       }
       switch (menuPos[1]) {
         case 0: // nothing selected
@@ -1041,16 +1051,16 @@ void runModeSettings() {
           if (button2.rose()) {
             if (menuSelect > 0) menuSelect--;
             else menuSelect = 7;
-            blinkLED(2, 3);
+            blinkLED(2, 2);
           }
           else if (button3.rose()) {
             menuPos[1] = menuSelect + 1;
-            blinkLED(3, 3);
+            blinkLED(3, 2);
           }
           else if (button4.rose()) {
             if (menuSelect < 7) menuSelect++;
             else menuSelect = 0;
-            blinkLED(4, 3);
+            blinkLED(4, 2);
           }
           break;
         case 1: // default run mode
@@ -1103,7 +1113,7 @@ void runModeSettings() {
           menuSelect = menuPos[0] - 1;
           menuPos[0] = 0;
         }
-        blinkLED(1, 3);
+        blinkLED(1, 2);
       }
       switch (menuPos[1]) {
         case 0: // nothing selected
@@ -1111,31 +1121,31 @@ void runModeSettings() {
           if (button2.rose()) {
             if (menuSelect > 0) menuSelect--;
             else menuSelect = 2;
-            blinkLED(2, 3);
+            blinkLED(2, 2);
           }
           else if (button3.rose()) {
             menuPos[1] = menuSelect + 1;
-            blinkLED(3, 3);
+            blinkLED(3, 2);
           }
           else if (button4.rose()) {
             if (menuSelect < 2) menuSelect++;
             else menuSelect = 0;
-            blinkLED(4, 3);
+            blinkLED(4, 2);
           }
           break;
         case 1: // load from EEPROM
           displayText(21, 0);
-          blinkLED(3, 3);
+          blinkLED(3, 2);
           menuPos[1] = 0;
           break;
         case 2: // save to EEPROM
           displayText(20, 0);
-          blinkLED(3, 3);
+          blinkLED(3, 2);
           menuPos[1] = 0;
           break;
         case 3: // restore defaults (does not save to EEPROM automatically)
           displayText(22, 0);
-          blinkLED(3, 3);
+          blinkLED(3, 2);
           menuPos[1] = 0;
           break;
       }
@@ -1174,326 +1184,208 @@ void backButton() {
       menuSelect = menuPos[0] - 1;
       menuPos[0] = 0;
     }
-    blinkLED(1, 3);
+    blinkLED(1, 2);
   }
 }
 
 // handles functions from settings menu that change values
 void changeValue(int value) {
   switch (value) {
-    // change midi channels
-    case 0:
-      if (button2.rose()) {
-        midiChan[menuPos[1] - 1]--;
-        blinkLED(2, 3);
-      }
+    case 0: // change midi channels
+    case 1: // change bank
+    case 2: // choose button
+    case 3: // choose note or velocity edit
+    case 4: // change note
+    case 5: // change note velocity
+    case 6: // choose cc number, on value, off value
+    case 7: // change CC
+    case 8: // change CC on value
+    case 9: // change CC off value
+    case 10: // change PC value
+    case 11: // change default run mode
+    case 12: // change default run mode timeout
+    case 13: // change number of banks
+    case 14: // change between normally closed/normally open external switch
+    case 15: // change LED brightness
+    case 16: // change screen brightness
+    case 17: // disable intro text with build date
+    case 18: // how long before screen shows idle notification
+      if ((button2.fell() || (buttonStates[1] == 1 && (millis() - buttonPressTime[1] >= buttonRepeatDelay)))) { // action on button 2 press or hold for longer than buttonRepeatDelay
+        switch (value) {
+          case 0:
+            midiChan[menuPos[1] - 1]--;
+            break;
+          case 1:
+            switchBank--;
+            break;
+          case 2:
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 4;
+            break;
+          case 3:
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 1;
+            break;
+          case 4:
+            switchNotes[switchBank][menuPos[3]]--;
+            break;
+          case 5:
+            switchVels[switchBank][menuPos[3]]--;
+            break;
+          case 6:
+            if (menuSelect > 0) menuSelect--;
+            else menuSelect = 2;
+            break;
+          case 7:
+            switchCCs[switchBank][menuPos[3]]--;
+            break;
+          case 8:
+            switchCCValOns[switchBank][menuPos[3]]--;
+            break;
+          case 9:
+            switchCCValOffs[switchBank][menuPos[3]]--;
+            break;
+          case 10:
+            switchPCs[switchBank][menuPos[3]]--;
+            break;
+          case 11:
+            runModeDefault--;
+            break;
+          case 12:
+            runmodeDefaultTime--;
+            break;
+          case 13:
+            numBanks--;
+            break;
+          case 14:
+            normallyClosed = !normallyClosed;
+            break;
+          case 15:
+            ledBright--;
+            break;
+          case 16:
+            screenBright--;
+            break;
+          case 17:
+            intro = !intro;
+            break;
+          case 18:
+            idleTimeOut--;
+            break;
+        }
+        buttonPressTime[1] = millis();
+      } else if (button2.rose()) blinkLED(2, 2);
       else if (button3.rose()) {
-        if (menuPos[1] > 0) menuPos[1] = 0;
-        else resetMenu();
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        midiChan[menuPos[1] - 1]++;
-        blinkLED(4, 3);
-      }
-      break;
+        switch (value) {
+          case 0:
+            if (menuPos[1] > 0) menuPos[1] = 0;
+            else resetMenu();
+            break;
+          case 1:
+            menuPos[1] = 1;
+            menuSelect = 0;
+            break;
+          case 2:
+            menuPos[1] = 2; // position 2 is for editing note/velocity
+            menuPos[3] = menuSelect; // menuPos[3] holds the selected button for editing
+            menuSelect = 0;
+            break;
+          case 3:
+            menuPos[2] = menuSelect + 1;
+            menuSelect = 0;
+            break;
+          case 6:
+            menuPos[2] = menuSelect + 1;
+            menuSelect = 0;
+            break;
+          // confirm current value and return to previous menu
+          case 4:
+          case 5:
+          case 7:
+          case 8:
+          case 9:
+          case 10:
+            menuPos[2] = 0;
+            break;
+          case 11:
+          case 12:
+          case 13:
+          case 14:
+          case 15:
+          case 16:
+          case 17:
+          case 18:
+            menuPos[1] = 0;
+            break;
 
-    // change bank
-    case 1:
-      if (button2.rose()) {
-        switchBank--;
-        blinkLED(2, 3);
+        }
+        blinkLED(3, 2);
       }
-      else if (button3.rose()) {
-        menuPos[1] = 1;
-        menuSelect = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchBank++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // choose button
-    case 2:
-      if (button2.rose()) {
-        if (menuSelect > 0) menuSelect--;
-        else menuSelect = 4;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 2; // position 2 is for editing note/velocity
-        menuPos[3] = menuSelect; //menuPos[3] holds the selected button for editing
-        blinkLED(3, 3);
-        menuSelect = 0;
-      }
-      else if (button4.rose()) {
-        if (menuSelect < 4) menuSelect++;
-        else menuSelect = 0;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // choose note or velocity edit
-    case 3:
-      if (button2.rose()) {
-        if (menuSelect > 0) menuSelect--;
-        else menuSelect = 1;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = menuSelect + 1;
-        blinkLED(3, 3);
-        menuSelect = 0;
-      }
-      else if (button4.rose()) {
-        if (menuSelect < 1) menuSelect++;
-        else menuSelect = 0;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change note
-    case 4:
-      if (button2.rose()) {
-        switchNotes[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchNotes[switchBank][menuPos[3]]++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change velocity
-    case 5:
-      if (button2.rose()) {
-        switchVels[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchVels[switchBank][menuPos[3]]--;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // choose cc number, on value, off value
-    case 6:
-      if (button2.rose()) {
-        if (menuSelect > 0) menuSelect--;
-        else menuSelect = 2;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = menuSelect + 1;
-        blinkLED(3, 3);
-        menuSelect = 0;
-      }
-      else if (button4.rose()) {
-        if (menuSelect < 2) menuSelect++;
-        else menuSelect = 0;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change cc number
-    case 7:
-      if (button2.rose()) {
-        switchCCs[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchCCs[switchBank][menuPos[3]]++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change cc on value
-    case 8:
-      if (button2.rose()) {
-        switchCCValOns[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchCCValOns[switchBank][menuPos[3]]++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change cc off value
-    case 9:
-      if (button2.rose()) {
-        switchCCValOffs[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[2] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchCCValOffs[switchBank][menuPos[3]]++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change pc number
-    case 10:
-      if (button2.rose()) {
-        switchPCs[switchBank][menuPos[3]]--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1]--;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        switchPCs[switchBank][menuPos[3]]++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change default run mdoe
-    case 11:
-      if (button2.rose()) {
-        runModeDefault--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        runModeDefault++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change default run mode timeout
-    case 12:
-      if (button2.rose()) {
-        runmodeDefaultTime--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        runmodeDefaultTime++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change number of banks
-    case 13:
-      if (button2.rose()) {
-        numBanks--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        numBanks++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change between normally closed/normally open external switch
-    case 14:
-      if (button2.rose()) {
-        normallyClosed = !normallyClosed;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        normallyClosed = !normallyClosed;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change LED brightness
-    case 15:
-      if (button2.rose()) {
-        ledBright--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        ledBright++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // change screen brightness
-    case 16:
-      if (button2.rose()) {
-        screenBright--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        screenBright++;
-        blinkLED(4, 3);
-      }
-      break;
-
-    // disable intro text with build date
-    case 17:
-      if (button2.rose()) {
-        intro = !intro;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        intro = !intro;
-        blinkLED(4, 3);
-      }
-      break;
-
-    case 18:
-      if (button2.rose()) {
-        idleTimeOut--;
-        blinkLED(2, 3);
-      }
-      else if (button3.rose()) {
-        menuPos[1] = 0;
-        blinkLED(3, 3);
-      }
-      else if (button4.rose()) {
-        idleTimeOut++;
-        blinkLED(4, 3);
-      }
+      else if ((button4.fell()) || (buttonStates[3] == 1 && (millis() - buttonPressTime[3] >= buttonRepeatDelay))) {
+        switch (value) {
+          case 0:
+            midiChan[menuPos[1] - 1]++;
+            break;
+          case 1:
+            switchBank++;
+            break;
+          case 2:
+            if (menuSelect < 4) menuSelect++;
+            else menuSelect = 0;
+            break;
+          case 3:
+            if (menuSelect < 1) menuSelect++;
+            else menuSelect = 0;
+            break;
+          case 4:
+            switchNotes[switchBank][menuPos[3]]++;
+            break;
+          case 5:
+            switchVels[switchBank][menuPos[3]]++;
+            break;
+          case 6:
+            if (menuSelect < 2) menuSelect++;
+            else menuSelect = 0;
+            break;
+          case 7:
+            switchCCs[switchBank][menuPos[3]]++;
+            break;
+          case 8:
+            switchCCValOns[switchBank][menuPos[3]]++;
+            break;
+          case 9:
+            switchCCValOffs[switchBank][menuPos[3]]++;
+            break;
+          case 10:
+            switchPCs[switchBank][menuPos[3]]++;
+            break;
+          case 11:
+            runModeDefault++;
+            break;
+          case 12:
+            runmodeDefaultTime++;
+            break;
+          case 13:
+            numBanks++;
+            break;
+          case 14:
+            normallyClosed = !normallyClosed;
+            break;
+          case 15:
+            ledBright++;
+            break;
+          case 16:
+            screenBright++;
+            break;
+          case 17:
+            intro = !intro;
+            break;
+          case 18:
+            idleTimeOut++;
+            break;
+        }
+        buttonPressTime[3] = millis();
+      } else if (button4.rose()) blinkLED(4, 2);
       break;
   }
 }
@@ -1539,8 +1431,8 @@ void checkValues() {
   if (screenBright > 7) screenBright = 1;
   else if (screenBright < 1) screenBright = 7;
 
-  if (idleTimeOut == 14) idleTimeOut = 0;
-  else if (idleTimeOut == 1) idleTimeOut = 15;
+  if (idleTimeOut == 4) idleTimeOut = 0;
+  else if (idleTimeOut == 1) idleTimeOut = 5;
   else if (idleTimeOut < 0) idleTimeOut = 60;
   else if (idleTimeOut > 60) idleTimeOut = 0;
 }
