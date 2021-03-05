@@ -60,7 +60,7 @@ The edit mode allows changing most of the settings on the device. You can change
 ### Parts list:
 | Name                                                          | Quantity |
 |---------------------------------------------------------------|----------|
-| [Micro Slide Switch 3PIN 2 Position 1P2T 5mm Handle](https://www.aliexpress.com/item/32983645797.html)            | 1        |
+| [Toggle Switch 2 Position 6 Pins](https://www.aliexpress.com/item/32800053774.html)            | 1        |
 | [SPST Momentary Soft Touch Push Button Stomp Foot Pedal Switch](https://www.aliexpress.com/item/32918205335.html) | 5        |
 | [6.35mm Mono Female Jack With Switch Socket Panel Adapter](https://www.aliexpress.com/item/32614113278.html)      | 1        |
 | [5 Pin Panel Mount Female Jack DIN Adapter MIDI Connector](https://www.aliexpress.com/item/32972269819.html)      | 1        |
