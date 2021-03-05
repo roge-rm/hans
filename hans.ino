@@ -1304,8 +1304,18 @@ void changeValue(int value) {
           case 8:
           case 9:
           case 10:
-            menuPos[1] = menuSelect + 1;
-            menuSelect = 0;
+            if (menuPos[2] > 0) {
+              menuSelect = menuPos[2] - 1;
+              menuPos[2] = 0;
+            }
+            else if (menuPos[1] > 0) {
+              menuSelect = menuPos[3];
+              menuPos[1]--;
+            }
+            else {
+              menuSelect = menuPos[0] - 1;
+              menuPos[0] = 0;
+            }
             break;
           case 11:
           case 12:
