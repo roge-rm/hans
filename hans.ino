@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "202100304"
+#define buildRev "202100305"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
@@ -231,7 +231,6 @@ void loop() {
     display.clear();
     screenWipe = 0;
   }
-
 
   // show a lil somethin on the screen every idleTimeOut
   // this is because I always forget to turn Hans off
@@ -788,9 +787,9 @@ void shiftMode() {
     timeOut = 0;
   }
   else if (button4.rose()) { // panic! stop all notes
+    panic();
     resetSwitches();
     resetLEDs();
-    panic();
     blinkLED(4, 5);
     display.showString("All notes stopped");
   }
@@ -1305,7 +1304,8 @@ void changeValue(int value) {
           case 8:
           case 9:
           case 10:
-            menuPos[2] = 0;
+            menuPos[1] = menuSelect + 1;
+            menuSelect = 0;
             break;
           case 11:
           case 12:
@@ -1443,12 +1443,12 @@ void checkValues() {
 
 void eepromLoad() {
   if (EEPROM.read(1000) == 1) { //Check the EEPROM update flag (address 1000) to see if custom values have been written. If so, load those values.
-    //Channels
+    // channels
     midiChan[0] = EEPROM.read(0);
     midiChan[1] = EEPROM.read(1);
     midiChan[2] = EEPROM.read(2);
 
-    //Defaults
+    // defaults
     runModeDefault = EEPROM.read(5);
     runmodeDefaultTime = EEPROM.read(6);
     numBanks = EEPROM.read(7);
@@ -1466,14 +1466,14 @@ void eepromLoad() {
         h++;
       }
     }
-    //Velocities
+    // velocities
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
         switchVels[i][j] = EEPROM.read(h);
         h++;
       }
     }
-    //CC
+    // CC
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
         switchCCs[i][j] = EEPROM.read(h);
@@ -1492,7 +1492,7 @@ void eepromLoad() {
         h++;
       }
     }
-    //PC
+    // PC
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
         switchPCs[i][j] = EEPROM.read(h);
@@ -1522,21 +1522,21 @@ void eepromSave() {
 
   int h = 20; // start at address 20 for other data
 
-  //Notes
+  // notes
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       EEPROM.update(h, switchNotes[i][j]);
       h++;
     }
   }
-  //Velocities
+  // velocities
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       EEPROM.update(h, switchVels[i][j]);
       h++;
     }
   }
-  //CC
+  // CC
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       EEPROM.update(h, switchCCs[i][j]);
@@ -1555,7 +1555,7 @@ void eepromSave() {
       h++;
     }
   }
-  //PC
+  // PC
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       EEPROM.update(h, switchPCs[i][j]);
@@ -1579,7 +1579,7 @@ void loadDefaults() {
   intro = true;
   idleTimeOut = 15;
 
-  //Set default notes starting at 60
+  // set default notes starting at 60
   int h = 60;
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
@@ -1588,7 +1588,7 @@ void loadDefaults() {
     }
   }
 
-  //Set all switches to default velocity of 64
+  // set all switches to default velocity of 64
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       switchVels[i][j] = 64;
