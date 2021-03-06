@@ -1,6 +1,7 @@
 # hans
 ### Hans is a 5 button battery powered USB/MIDI footswitch<br>
--- [Check Hans out on thingiverse here](https://www.thingiverse.com/thing:4768840) --
+
+Check Hans out on: [Youtube](https://www.youtube.com/watch?v=nbIn7SEke0U) | [Thingiverse](https://www.thingiverse.com/thing:4768840)
 
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/front.jpg width=600><br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/back.jpg width=300><img src=https://raw.githubusercontent.com/hunked/hans/main/images/inside.jpg width=300><br>
@@ -79,6 +80,5 @@ The edit mode allows changing most of the settings on the device. You can change
 | [M2 Stainless Nut](https://www.aliexpress.com/item/32977174437.html)                                              | 2        |
 
 ### Purchasing a Hans:
-If you would like to purchase a pre-built Hans (built by me) you will be able to do so soon. Stock will be small and volume will be low but I figure I might be able to build a few Hans a week if the demand calls for it.
 
 [Please see this page for purchasing info.](https://github.com/hunked/hans/blob/main/PURCHASE.md/)
