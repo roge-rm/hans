@@ -81,6 +81,4 @@ The edit mode allows changing most of the settings on the device. You can change
 ### Purchasing a Hans:
 If you would like to purchase a pre-built Hans (built by me) you will be able to do so soon. Stock will be small and volume will be low but I figure I might be able to build a few Hans a week if the demand calls for it.
 
-[Please visit my site here for more details about purchasing a Hans.](http://hunke.ws/posts/hans-5-button-midi-footswitch/)
-
-If the site is not updated with stock information there are none currently for sale. Cheers.
+[Please see this page for purchasing info.](https://github.com/hunked/hans/blob/main/PURCHASE.md/)
