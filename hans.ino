@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "202100305"
+#define buildRev "202100307"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
@@ -25,11 +25,11 @@ const byte extDriver = 45;
 // shift mode is enabled when external pedal switch is pushed down
 bool shift = false;
 
-// control whether button presses are momentary or toggle (only applies to note and CC modes)
-bool toggle = false;
+// control whether button presses are momentary (false) or toggle (only applies to note and CC modes)
+bool toggle;
+bool toggleDefault; // set by EEPROM
 
-// set to true if your external pedal is closed in default state
-// you also need to connect an output pin to the normally-connected pin of TS port (see above)
+// external pedal is a normally closed or normally open button - change in settings menu
 bool normallyClosed; // set by EEPROM
 
 // LED settings
@@ -44,13 +44,14 @@ int midiChan[3]; // set by EEPROM
 int switchBank = 0;
 int numBanks; // set by EEPROM
 
-// arrays are declared here but loaded from EEPROM/defaults in eepromREAD() -- eeprom not implemented yet
-int switchNotes[5][5] = {{60, 61, 62, 63, 64}, {65, 66, 67, 68, 69}, {70, 71, 72, 73, 74}, {75, 76, 77, 78, 79}, {80, 81, 82, 83, 84}};
-int switchVels[5][5] = {{127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}};
-int switchCCs[5][5] = {{64, 65, 66, 67, 68}, {69, 70, 71, 72, 73}, {74, 75, 76, 77, 78}, {79, 80, 81, 82, 83}, {84, 85, 86, 87, 88}};
-int switchCCValOns[5][5] = {{127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}, {127, 127, 127, 127, 127}};
-int switchCCValOffs[5][5] = {{0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}};
-int switchPCs[5][5] = {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}, {16, 17, 18, 19, 20}, {21, 22, 23, 24, 25}};
+// arrays are declared here but loaded from EEPROM/defaults in eepromREAD()
+int switchNotes[5][5]; // note messages
+int switchVels[5][5]; // note velocity
+bool switchAltMoment[5][5]; // enable alternative momentary mode - this sends a note on message on button press and another note on message on button release
+int switchCCs[5][5]; // CC numbers
+int switchCCValOns[5][5]; // CC on value
+int switchCCValOffs[5][5]; // CC off value
+int switchPCs[5][5]; // PC numbers
 
 bool ledStatus[5][5] = {{0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}};
 
@@ -88,9 +89,9 @@ int menuPos[4] = {0, 0, 0, 0};
 int menuSelect = 0;
 char menuListMain[7][5] = {"CHAN", "NOTE", "CC", "PC", "SET", "DATA", "SAVE"};
 char menuListChan[3][5] = {"NOTE", "CC", "PC"};
-char menuListNote[2][5] = {"NOTE", "VEL"};
+char menuListNote[3][5] = {"NOTE", "VEL", "ALTM"};
 char menuListCC[3][5] = {"CC", "V ON", "VOFF"};
-char menuListSettings[8][5] = {"DRUN", "TIME", "BANK", "EXSW", "LEDB", "SCRB", "INFO", "IDLE"};
+char menuListSettings[9][5] = {"DRUN", "TIME", "BANK", "TOGG", "EXSW", "LEDB", "SCRB", "INFO", "IDLE"};
 char menuListData[3][5] = {"LOAD", "SAVE", "DEF"};
 char idleText[4][5] = {".", " .", "  .", "   ."};
 
@@ -128,13 +129,14 @@ void setup() {
 
   eepromLoad(); // load values from EEPROM - or from default set it nothing saved to EEPROMN
   runmodeTime = runmodeDefaultTime; // set initial runmode timeout to default timeout
+  toggle = toggleDefault;
 
   // display setup and greeting
   display.setBrightness(screenBright);
   display.setScrolldelay(scrollDelay);
   if (intro) {
     display.showString("hans");
-    delay(250);
+    delay(750);
     display.showString(buildRev);
     delay(250);
   }
@@ -320,8 +322,8 @@ void runModeSelectMode() { // give choice between running modes, choose default 
 
 void runModeNote() {
   if (button1.changed() || button2.changed() || button3.changed() || button4.changed() || button5.changed()) {
-    if (!shift) {
-      if (!toggle) {
+    if (!shift) { // shift mode disabled
+      if (!toggle) { // toggle mode disabled (aka momentary mode)
         if (button1.fell()) {
           display.showNumber(switchNotes[switchBank][0]);
           ledStatus[switchBank][0] = 1;
@@ -330,8 +332,13 @@ void runModeNote() {
         }
         else if (button1.rose()) {
           display.showNumber(switchNotes[switchBank][0]);
-          usbMIDI.sendNoteOff(switchNotes[switchBank][0], 0, midiChan[0]);
-          MIDI.sendNoteOff(switchNotes[switchBank][0], 0, midiChan[0]);
+          if (!switchAltMoment[switchBank][0]) { // normal operation - alt momentary mode disabled
+            usbMIDI.sendNoteOff(switchNotes[switchBank][0], 0, midiChan[0]);
+            MIDI.sendNoteOff(switchNotes[switchBank][0], 0, midiChan[0]);
+          } else if (switchAltMoment[switchBank][0]) { // alt momentary mode enabled
+            usbMIDI.sendNoteOn(switchNotes[switchBank][0], switchVels[switchBank][0], midiChan[0]);
+            MIDI.sendNoteOn(switchNotes[switchBank][0], switchVels[switchBank][0], midiChan[0]);
+          }
           ledStatus[switchBank][0] = 0;
         }
 
@@ -343,8 +350,13 @@ void runModeNote() {
         }
         else if (button2.rose()) {
           display.showNumber(switchNotes[switchBank][1]);
-          usbMIDI.sendNoteOff(switchNotes[switchBank][1], 0, midiChan[0]);
-          MIDI.sendNoteOff(switchNotes[switchBank][1], 0, midiChan[0]);
+          if (!switchAltMoment[switchBank][1]) {
+            usbMIDI.sendNoteOff(switchNotes[switchBank][1], 0, midiChan[0]);
+            MIDI.sendNoteOff(switchNotes[switchBank][1], 0, midiChan[0]);
+          } else if (switchAltMoment[switchBank][1]) {
+            usbMIDI.sendNoteOn(switchNotes[switchBank][1], switchVels[switchBank][1], midiChan[0]);
+            MIDI.sendNoteOn(switchNotes[switchBank][1], switchVels[switchBank][1], midiChan[0]);
+          }
           ledStatus[switchBank][1] = 0;
         }
 
@@ -356,8 +368,13 @@ void runModeNote() {
         }
         else if (button3.rose()) {
           display.showNumber(switchNotes[switchBank][2]);
-          usbMIDI.sendNoteOff(switchNotes[switchBank][2], 0, midiChan[0]);
-          MIDI.sendNoteOff(switchNotes[switchBank][2], 0, midiChan[0]);
+          if (!switchAltMoment[switchBank][2]) {
+            usbMIDI.sendNoteOff(switchNotes[switchBank][2], 0, midiChan[0]);
+            MIDI.sendNoteOff(switchNotes[switchBank][2], 0, midiChan[0]);
+          } else if (switchAltMoment[switchBank][2]) {
+            usbMIDI.sendNoteOn(switchNotes[switchBank][2], switchVels[switchBank][2], midiChan[0]);
+            MIDI.sendNoteOn(switchNotes[switchBank][2], switchVels[switchBank][2], midiChan[0]);
+          }
           ledStatus[switchBank][2] = 0;
         }
 
@@ -369,8 +386,13 @@ void runModeNote() {
         }
         else if (button4.rose()) {
           display.showNumber(switchNotes[switchBank][3]);
-          usbMIDI.sendNoteOff(switchNotes[switchBank][3], 0, midiChan[0]);
-          MIDI.sendNoteOff(switchNotes[switchBank][3], 0, midiChan[0]);
+          if (!switchAltMoment[switchBank][3]) {
+            usbMIDI.sendNoteOff(switchNotes[switchBank][3], 0, midiChan[0]);
+            MIDI.sendNoteOff(switchNotes[switchBank][3], 0, midiChan[0]);
+          } else if (switchAltMoment[switchBank][3]) {
+            usbMIDI.sendNoteOn(switchNotes[switchBank][3], switchVels[switchBank][3], midiChan[0]);
+            MIDI.sendNoteOn(switchNotes[switchBank][3], switchVels[switchBank][3], midiChan[0]);
+          }
           ledStatus[switchBank][3] = 0;
         }
 
@@ -382,8 +404,13 @@ void runModeNote() {
         }
         else if (button5.rose()) {
           display.showNumber(switchNotes[switchBank][4]);
-          usbMIDI.sendNoteOff(switchNotes[switchBank][4], 0, midiChan[0]);
-          MIDI.sendNoteOff(switchNotes[switchBank][4], 0, midiChan[0]);
+          if (!switchAltMoment[switchBank][4]) {
+            usbMIDI.sendNoteOff(switchNotes[switchBank][4], 0, midiChan[0]);
+            MIDI.sendNoteOff(switchNotes[switchBank][4], 0, midiChan[0]);
+          } else if (switchAltMoment[switchBank][4]) {
+            usbMIDI.sendNoteOn(switchNotes[switchBank][4], switchVels[switchBank][4], midiChan[0]);
+            MIDI.sendNoteOn(switchNotes[switchBank][4], switchVels[switchBank][4], midiChan[0]);
+          }
           ledStatus[switchBank][4] = 0;
         }
       }
@@ -958,9 +985,9 @@ void runModeSettings() {
           displayText(9, 0);
           changeValue(2);
           break;
-        case 2: // choose/change note or velocity
+        case 2: // choose/change note, velocity, alternative momentary mode
           switch (menuPos[2]) {
-            case 0: // choose note or velocity
+            case 0: // choose note, velocity, altmode
               display.showString(menuListNote[menuSelect]);
               changeValue(3);
               break;
@@ -971,6 +998,14 @@ void runModeSettings() {
             case 2: // change velocity
               display.showNumber(switchVels[switchBank][menuPos[3]]);
               changeValue(5);
+              break;
+            case 3: // change alternative momentary mode
+              if (switchAltMoment[switchBank][menuPos[3]]) {
+                display.showString("YES");
+              } else if (!switchAltMoment[switchBank][menuPos[3]]) {
+                display.showString("NO");
+              }
+              changeValue(20);
               break;
           }
           break;
@@ -989,9 +1024,9 @@ void runModeSettings() {
           displayText(9, 0);
           changeValue(2);
           break;
-        case 2: // choose/change note or velocity
+        case 2: // choose/change CC number, on value, off value
           switch (menuPos[2]) {
-            case 0: // choose note or velocity
+            case 0: // choose note, velocity, or alternate momentary mode
               display.showString(menuListCC[menuSelect]);
               changeValue(6);
               break;
@@ -1049,7 +1084,7 @@ void runModeSettings() {
           display.showString(menuListSettings[menuSelect]);
           if (button2.rose()) {
             if (menuSelect > 0) menuSelect--;
-            else menuSelect = 7;
+            else menuSelect = 8;
             blinkLED(2, 2);
           }
           else if (button3.rose()) {
@@ -1057,7 +1092,7 @@ void runModeSettings() {
             blinkLED(3, 2);
           }
           else if (button4.rose()) {
-            if (menuSelect < 7) menuSelect++;
+            if (menuSelect < 8) menuSelect++;
             else menuSelect = 0;
             blinkLED(4, 2);
           }
@@ -1074,30 +1109,33 @@ void runModeSettings() {
           display.showNumber(numBanks);
           changeValue(13);
           break;
-        case 4: // ext footswitch default state
+        case 4: // toggle or momentary by default
+          if (!toggleDefault) display.showString("MOMT");
+          else if (toggleDefault) display.showString("TGGL");
+          changeValue(19);
+          break;
+        case 5: // ext footswitch default state
           if (normallyClosed) display.showString("NC");
           else if (!normallyClosed) display.showString("NO");
           changeValue(14);
           break;
-        case 5: // led intensity
+        case 6: // led intensity
           display.showNumber(ledBright);
           changeValue(15);
           break;
-        case 6: // screen brightness
+        case 7: // screen brightness
           display.showNumber(screenBright);
           changeValue(16);
           break;
-        case 7: // intro text on/off
+        case 8: // intro text on/off
           if (intro) display.showString("YES");
           else if (!intro) display.showString("NO");
           changeValue(17);
           break;
-        case 8: // idle timeout - set to less than 15 to disable
+        case 9: // idle timeout - set to less than 15 to disable
           display.showNumber(idleTimeOut);
           changeValue(18);
           break;
-
-
       }
       break;
 
@@ -1209,6 +1247,8 @@ void changeValue(int value) {
     case 16: // change screen brightness
     case 17: // disable intro text with build date
     case 18: // how long before screen shows idle notification
+    case 19: // choose between toggle/momentary as default action
+    case 20: // toggle alternate momentary mode for each button
       if ((button2.fell() || (buttonStates[1] == 1 && (millis() - buttonPressTime[1] >= buttonRepeatDelay)))) { // action on button 2 press or hold for longer than buttonRepeatDelay
         switch (value) {
           case 0:
@@ -1223,7 +1263,7 @@ void changeValue(int value) {
             break;
           case 3:
             if (menuSelect > 0) menuSelect--;
-            else menuSelect = 1;
+            else menuSelect = 2;
             break;
           case 4:
             switchNotes[switchBank][menuPos[3]]--;
@@ -1271,6 +1311,12 @@ void changeValue(int value) {
           case 18:
             idleTimeOut--;
             break;
+          case 19:
+            toggleDefault = !toggleDefault;
+            break;
+          case 20:
+            switchAltMoment[switchBank][menuPos[3]] = !switchAltMoment[switchBank][menuPos[3]];
+            break;
         }
         buttonPressTime[1] = millis();
       } else if (button2.rose()) blinkLED(2, 2);
@@ -1304,6 +1350,7 @@ void changeValue(int value) {
           case 8:
           case 9:
           case 10:
+          case 20:
             if (menuPos[2] > 0) {
               menuSelect = menuPos[2] - 1;
               menuPos[2] = 0;
@@ -1325,6 +1372,7 @@ void changeValue(int value) {
           case 16:
           case 17:
           case 18:
+          case 19:
             menuPos[1] = 0;
             break;
 
@@ -1344,7 +1392,7 @@ void changeValue(int value) {
             else menuSelect = 0;
             break;
           case 3:
-            if (menuSelect < 1) menuSelect++;
+            if (menuSelect < 2) menuSelect++;
             else menuSelect = 0;
             break;
           case 4:
@@ -1392,6 +1440,12 @@ void changeValue(int value) {
             break;
           case 18:
             idleTimeOut++;
+            break;
+          case 19:
+            toggleDefault = !toggleDefault;
+            break;
+          case 20:
+            switchAltMoment[switchBank][menuPos[3]] = !switchAltMoment[switchBank][menuPos[3]];
             break;
         }
         buttonPressTime[3] = millis();
@@ -1467,6 +1521,7 @@ void eepromLoad() {
     screenBright = EEPROM.read(10);
     intro = EEPROM.read(11);
     idleTimeOut = EEPROM.read(12);
+    toggleDefault = EEPROM.read(13);
 
     int h = 20; // start at address 20 for other data
     //Notes
@@ -1480,6 +1535,13 @@ void eepromLoad() {
     for (int i = 0; i < 5; i++) {
       for (int j = 0; j < 5; j++) {
         switchVels[i][j] = EEPROM.read(h);
+        h++;
+      }
+    }
+    // alternate momentary mode
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        switchAltMoment[i][j] = EEPROM.read(h);
         h++;
       }
     }
@@ -1529,6 +1591,7 @@ void eepromSave() {
   EEPROM.update(10, screenBright);
   EEPROM.update(11, intro);
   EEPROM.update(12, idleTimeOut);
+  EEPROM.update(13, toggleDefault);
 
   int h = 20; // start at address 20 for other data
 
@@ -1543,6 +1606,13 @@ void eepromSave() {
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 5; j++) {
       EEPROM.update(h, switchVels[i][j]);
+      h++;
+    }
+  }
+  // alternate momentary mode
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      EEPROM.update(h, switchAltMoment[i][j]);
       h++;
     }
   }
@@ -1588,6 +1658,7 @@ void loadDefaults() {
   screenBright = 1;
   intro = true;
   idleTimeOut = 15;
+  toggleDefault = false;
 
   // set default notes starting at 60
   int h = 60;
@@ -1604,6 +1675,15 @@ void loadDefaults() {
       switchVels[i][j] = 64;
     }
   }
+
+  // set alternative momentary mode to off
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      switchAltMoment[i][j] = false;
+    }
+  }
+
+
   // set default CC numbers starting at 20
   h = 20;
   for (int i = 0; i < 5; i++) {
