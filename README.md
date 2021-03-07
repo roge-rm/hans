@@ -25,12 +25,13 @@ Why did I name it Hans? No good reason at all.
 - a 4 character screen
 
 When Hans is turned on you can choose between four modes: 
-- send MIDI note on/off messages 
+- send MIDI note on/off messages (*alternative momentary mode can be activate to send note on for both press & release*)
 - send MIDI control change (CC) messages
 - send MIDI program change (PC) messages
 - an edit mode to customize all features of the footswitch
 
-The first three modes are self-explanatory. Both the note on/off and CC modes can be toggled between momentary and toggle operations (done by holding shift + pressing button 2).
+The first three modes are self-explanatory. Both the note on/off and CC modes can be toggled between momentary and toggle operations (done by holding shift + pressing button 2), and each note can be switched between two momentary modes; one sends note on/note off on press/release and the other sends note on messages on both press and reelease.
+
 The edit mode allows changing most of the settings on the device. You can change the midi notes sent (and the velocity sent with them), the control change numbers and values, and program change numbers. You can also edit the default mode (in case you want to start in CC or PC mode), the timeout before the default mode is selected, and various other settings like screen and LED brightness.
 
 ### How to use Hans:
