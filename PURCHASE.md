@@ -3,7 +3,7 @@ If you cannot/do not want to build a Hans for yourself I will be assembling a fe
 
 Please note I am only offering to source the parts and assemble the device for you and as such I can only warranty my work up until the point it reaches you. I test every unit I build extensively but please do the same when you receive it to make sure nothing has gone amiss during shipment. If this is the case I will of course do everything necessary to remedy the situation!
 
-However due to the nature of my small (one unemployed man) operation I cannot offer any warranty beyond the initial assembly. 
+Again, due to the nature of my small (one unemployed man) operation I cannot offer any warranty beyond the initial assembly. 
 If you manage to damage your Hans somehow feel free to contact me for advice in repairing it, and if you find any bugs please do report them immediately so that I can fix them ASAP.
 
 ### Currently for sale:
