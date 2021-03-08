@@ -13,6 +13,7 @@ Currently in assembly.
 
 ### Pending sale:
 
+### Sold:
 **Serial:** 001<br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-front.jpg width=300><br>
 **Colours:** Light Green Base/Purple Top<br>
