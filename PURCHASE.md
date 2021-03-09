@@ -6,6 +6,13 @@ Please note I am only offering to source the parts and assemble the device for y
 Again, due to the nature of my small (one unemployed man) operation I cannot offer any warranty beyond the initial assembly. 
 If you manage to damage your Hans somehow feel free to contact me for advice in repairing it, and if you find any bugs please do report them immediately so that I can fix them ASAP.
 
+The cost for a Hans, assembled, including battery, is $170 CAD + shipping.
+If you are interested in purchasing please send an email to the following address and I will get back to you as soon as I can.<br>
+<img src=https://raw.githubusercontent.com/hunked/hans/main/builds/contact.png>
+
+Thanks!
+
+
 ### Currently for sale:
 
 **Serial:** 002<br>
@@ -22,9 +29,3 @@ None currently pending sale.
 <img src=https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-front.jpg width=300><br>
 **Colours:** Light Green Base/Purple Top<br>
 **Pictures:** [Rear](https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-rear.jpg) [Top](https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-top.jpg) [Bottom](https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-bottom.jpg) [Inside](https://raw.githubusercontent.com/hunked/hans/main/builds/001/001-inside.jpg) 
-
-The cost for a Hans, assembled, including battery, is $170 CAD + shipping.
-If you are interested in purchasing please send an email to the following address and I will get back to you as soon as I can.<br>
-<img src=https://raw.githubusercontent.com/hunked/hans/main/builds/contact.png>
-
-Thanks!
