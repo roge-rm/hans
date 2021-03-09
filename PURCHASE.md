@@ -9,9 +9,13 @@ If you manage to damage your Hans somehow feel free to contact me for advice in 
 ### Currently for sale:
 
 **Serial:** 002<br>
-Currently in assembly.
+<img src=https://raw.githubusercontent.com/hunked/hans/main/builds/002/002-front.jpg width=300><br>
+**Colours:** Purple Base/Light Green Top<br>
+**Pictures:** [Rear](https://raw.githubusercontent.com/hunked/hans/main/builds/002/002-rear.jpg) [Top](https://raw.githubusercontent.com/hunked/hans/main/builds/002/002-top.jpg) [Bottom](https://raw.githubusercontent.com/hunked/hans/main/builds/002/002-bottom.jpg) [Inside](https://raw.githubusercontent.com/hunked/hans/main/builds/002/002-inside.jpg) 
 
 ### Pending sale:
+
+None currently pending sale.
 
 ### Sold:
 **Serial:** 001<br>
