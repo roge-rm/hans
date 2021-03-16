@@ -56,6 +56,32 @@ The edit mode allows changing most of the settings on the device. You can change
     * Button 4 - Next item (in menu) or Increase value by 1 (when editing)
   * **Changes will not be saved to EEPROM (to be loaded on next startup) unless you select SAVE from the either the main menu or under the DATA submenu.** If you make a change you do not like you can either restart the unit, load the settings from EEPROM (under DATA submenu), or load the factory defaults (also under DATA submenu).
 
+### Updating Hans:
+
+Hans can be easily updated from a computer running Windows 7/8/10. 
+
+1. Download the Teensy Loader app [from here](https://www.pjrc.com/teensy/loader_win10.html)
+2. Download the [latest release](https://github.com/hunked/hans/releases) HEX file
+3. Run the Teensy Loader and connect your Hans to your computer using a mini-USB cable
+4. Open the hex file you downloaded in Teensy Loader and enable automatic mode in the loader
+5. Press the programming button on your Hans (the one embedded in the right side) and the firmware will upload
+6. Disconnect Hans when complete - you are ready!
+
+### Replacing/Installing Battery:
+
+You can install/remove/replace the battery in your Hans by following these steps:
+
+1. Ensure the power to Hans is turned off, no cables are connected, etc.
+2. Remove the ten hex screws on the face and set aside.
+3. Carefully lift the back of the face of footswitch and flip it forward, making sure not to snag any wiring.
+4. Remove the two phillips screws holding the battery clamp down.
+5. Insert/remove/replace the battery as needed.
+6. Reinstall the battery clamp with the two screws.
+7. Carefully flip the face of the footswitch back onto the base, making sure not to snag any wiring.
+8. Install the ten hex screws on the face in whatever order pleases you. I like to install from the centre outwards.
+
+You may need a bit of gentle pressure when reinstalling the face to push any wiring down - however it should not be snagged anywhere and you should not have to force the face down onto the base. There should be enough room in the inner cavity to neatly fold any wiring into a place that does not cause any stress to the wiring or internal components.
+
 ### Pinout:<br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/pinout.png>
 
