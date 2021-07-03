@@ -85,6 +85,9 @@ You may need a bit of gentle pressure when reinstalling the face to push any wir
 ### Pinout:<br>
 <img src=https://raw.githubusercontent.com/hunked/hans/main/images/pinout.png>
 
+### KiCad Schematic:<br>
+<img src=https://raw.githubusercontent.com/hunked/hans/main/images/schematic-v1.0.png width=700>
+
 ### Parts list:
 | Name                                                          | Quantity |
 |---------------------------------------------------------------|----------|
