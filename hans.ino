@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "202100307"
+#define buildRev "20210925"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
