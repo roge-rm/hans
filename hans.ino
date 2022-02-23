@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "20210925"
+#define buildRev "20220223"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
@@ -218,7 +218,7 @@ void loop() {
       else shift = false;
     }
 
-    else if (button6.rose()) {
+    if (button6.rose()) {
       shift = false;
     }
     else if (button6.fell()) {
@@ -430,7 +430,7 @@ void runModeNote() {
           }
         }
 
-        else if (button2.fell()) {
+        if (button2.fell()) {
           display.showNumber(switchNotes[switchBank][1]);
           if (switchStates[switchBank][1] == 0) {
             switchStates[switchBank][1] = 1;
@@ -445,7 +445,7 @@ void runModeNote() {
           }
         }
 
-        else if (button3.fell()) {
+        if (button3.fell()) {
           display.showNumber(switchNotes[switchBank][2]);
           if (switchStates[switchBank][2] == 0) {
             switchStates[switchBank][2] = 1;
@@ -460,7 +460,7 @@ void runModeNote() {
           }
         }
 
-        else if (button4.fell()) {
+        if (button4.fell()) {
           display.showNumber(switchNotes[switchBank][3]);
           if (switchStates[switchBank][3] == 0) {
             switchStates[switchBank][3] = 1;
@@ -475,7 +475,7 @@ void runModeNote() {
           }
         }
 
-        else if (button5.fell()) {
+        if (button5.fell()) {
           display.showNumber(switchNotes[switchBank][4]);
           if (switchStates[switchBank][4] == 0) {
             switchStates[switchBank][4] = 1;
@@ -585,7 +585,7 @@ void runModeCC() {
           }
         }
 
-        else if (button2.fell()) {
+        if (button2.fell()) {
           display.showNumber(switchCCs[switchBank][1]);
           if (switchStates[switchBank][1] == 0) {
             switchStates[switchBank][1] = 1;
@@ -600,7 +600,7 @@ void runModeCC() {
           }
         }
 
-        else if (button3.fell()) {
+        if (button3.fell()) {
           display.showNumber(switchCCs[switchBank][2]);
           if (switchStates[switchBank][2] == 0) {
             switchStates[switchBank][2] = 1;
@@ -615,7 +615,7 @@ void runModeCC() {
           }
         }
 
-        else if (button4.fell()) {
+        if (button4.fell()) {
           display.showNumber(switchCCs[switchBank][3]);
           if (switchStates[switchBank][3] == 0) {
             switchStates[switchBank][3] = 1;
@@ -630,7 +630,7 @@ void runModeCC() {
           }
         }
 
-        else if (button5.fell()) {
+        if (button5.fell()) {
           display.showNumber(switchCCs[switchBank][4]);
           if (switchStates[switchBank][4] == 0) {
             switchStates[switchBank][4] = 1;
@@ -796,14 +796,14 @@ void shiftMode() {
     else if (switchBank == 0) switchBank = numBanks - 1;
     displayText(8, 0);
   }
-  else if (button2.rose()) { // switch between toggle and momentary mode
+  if (button2.rose()) { // switch between toggle and momentary mode
     resetNotes();
     resetLEDs();
     resetSwitches();
     toggle = !toggle;
     displayText(7, 1);
   }
-  else if (button3.rose()) { // return to menu
+  if (button3.rose()) { // return to menu
     resetNotes();
     resetLEDs();
     resetSwitches();
@@ -813,14 +813,14 @@ void shiftMode() {
     runmodeTime = runmodeTimeLong;
     timeOut = 0;
   }
-  else if (button4.rose()) { // panic! stop all notes
+  if (button4.rose()) { // panic! stop all notes
     panic();
     resetSwitches();
     resetLEDs();
     blinkLED(4, 5);
     display.showString("All notes stopped");
   }
-  else if (button5.rose()) { // move up one bank of switches
+  if (button5.rose()) { // move up one bank of switches
     if (switchBank < (numBanks - 1)) switchBank++;
     else if (switchBank == (numBanks - 1)) switchBank = 0;
     displayText(8, 0);
