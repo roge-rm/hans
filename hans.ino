@@ -2,7 +2,7 @@
    5 buttons and an external switch walk in to a bar.
 */
 
-#define buildRev "20220223"
+#define buildRev "202100307"
 bool intro; // set by EEPROM - decide whether to show the name/buildrev intro text - set in eeprom
 
 #include <Bounce2.h>
@@ -93,10 +93,11 @@ char menuListNote[3][5] = {"NOTE", "VEL", "ALTM"};
 char menuListCC[3][5] = {"CC", "V ON", "VOFF"};
 char menuListSettings[9][5] = {"DRUN", "TIME", "BANK", "TOGG", "EXSW", "LEDB", "SCRB", "INFO", "IDLE"};
 char menuListData[3][5] = {"LOAD", "SAVE", "DEF"};
-char idleText[4][5] = {".", " .", "  .", "   ."};
+char idleText[6][5] = {"hans", " is ", " me", "hans", " is ", " on"};
 
 const int wipeTime = 1000; // max time in ms to display anything on the screen
 int idleTimeOut; // set by EEPROM - time in seconds to wait before showing a keepalive notification
+int idleCounter = 0; // used to run through idle messages in order
 elapsedMillis screenWipe;
 elapsedMillis idleTime;
 
@@ -218,7 +219,7 @@ void loop() {
       else shift = false;
     }
 
-    if (button6.rose()) {
+    else if (button6.rose()) {
       shift = false;
     }
     else if (button6.fell()) {
@@ -238,7 +239,9 @@ void loop() {
   // this is because I always forget to turn Hans off
   if (idleTimeOut > 0) {
     if (idleTime >= (idleTimeOut * 1000)) {
-      display.showString(idleText[random(0, 3)]);
+      display.showString(idleText[idleCounter]);
+      if (idleCounter < 6) idleCounter++;
+      else idleCounter = 0;
       idleTime = 0;
       screenWipe = 0;
     }
@@ -251,29 +254,36 @@ void updateButtons() {
   if (button1.update()) {
     buttonStates[0] = !button1.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (button2.update()) {
     buttonStates[1] = !button2.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (button3.update()) {
     buttonStates[2] = !button3.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (button4.update()) {
     buttonStates[3] = !button4.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (button5.update()) {
     buttonStates[4] = !button5.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (button6.update()) {
     buttonStates[5] = !button6.read();
     idleTime = 0;
+    idleCounter = 0;
   }
   if (buttonExt.update()) {
     idleTime = 0;
+    idleCounter = 0;
   }
 }
 
@@ -796,14 +806,14 @@ void shiftMode() {
     else if (switchBank == 0) switchBank = numBanks - 1;
     displayText(8, 0);
   }
-  if (button2.rose()) { // switch between toggle and momentary mode
+  else if (button2.rose()) { // switch between toggle and momentary mode
     resetNotes();
     resetLEDs();
     resetSwitches();
     toggle = !toggle;
     displayText(7, 1);
   }
-  if (button3.rose()) { // return to menu
+  else if (button3.rose()) { // return to menu
     resetNotes();
     resetLEDs();
     resetSwitches();
@@ -813,14 +823,14 @@ void shiftMode() {
     runmodeTime = runmodeTimeLong;
     timeOut = 0;
   }
-  if (button4.rose()) { // panic! stop all notes
+  else if (button4.rose()) { // panic! stop all notes
     panic();
     resetSwitches();
     resetLEDs();
     blinkLED(4, 5);
     display.showString("All notes stopped");
   }
-  if (button5.rose()) { // move up one bank of switches
+  else if (button5.rose()) { // move up one bank of switches
     if (switchBank < (numBanks - 1)) switchBank++;
     else if (switchBank == (numBanks - 1)) switchBank = 0;
     displayText(8, 0);
@@ -1497,8 +1507,8 @@ void checkValues() {
 
   if (idleTimeOut == 4) idleTimeOut = 0;
   else if (idleTimeOut == 1) idleTimeOut = 5;
-  else if (idleTimeOut < 0) idleTimeOut = 60;
-  else if (idleTimeOut > 60) idleTimeOut = 0;
+  else if (idleTimeOut < 0) idleTimeOut = 120;
+  else if (idleTimeOut > 120) idleTimeOut = 0;
 }
 
 /*
@@ -1657,7 +1667,7 @@ void loadDefaults() {
   ledBright = 1;
   screenBright = 1;
   intro = true;
-  idleTimeOut = 15;
+  idleTimeOut = 30;
   toggleDefault = false;
 
   // set default notes starting at 60
