@@ -108,7 +108,3 @@ You may need a bit of gentle pressure when reinstalling the face to push any wir
 | [M2x6mm Stainless Countersunk Self-Tapping Screw](https://www.aliexpress.com/item/4001074924245.html)               | 6        |
 | [M2x10mm Stainless Hex Head Bolt](https://www.aliexpress.com/item/32810852732.html)                               | 2        |
 | [M2 Stainless Nut](https://www.aliexpress.com/item/32977174437.html)                                              | 2        |
-
-### Purchasing a Hans:
-
-[Please see this page for purchasing info.](https://github.com/hunked/hans/blob/main/PURCHASE.md/)
