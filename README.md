@@ -15,7 +15,7 @@ Why did I name it Hans? No good reason at all.
 
 ### Hans has the following hardware/features:
 - 5 momentary foot switches with status LEDs
-- 1 external footswitch input for acting as a "shift" button (with small backup shift button on the back in case an external switch is not attached)
+- Expression pedal input (works in all button modes)
 - Up to 5 virtual "banks" of buttons that can be switched between (3 enabled by default but can be changed in the edit menu)
 - Full editing of all footswitch functions from the switch itself - you don't need to use your computer at all to change any settings. 
 - Changes can be saved to EEPROM and will be loaded automatically on startup.
